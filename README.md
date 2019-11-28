@@ -38,6 +38,7 @@ fmt.Println(f.String())
 ```
 
 Result:
+
 ![ANSI Example Output](https://github.com/muesli/reflow/blob/master/reflow.png)
 
 ## Development
