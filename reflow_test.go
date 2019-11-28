@@ -108,9 +108,20 @@ func TestReflow(t *testing.T) {
 	}
 
 	for i, tc := range tt {
-		actual := ReflowString(tc.Input, tc.Limit)
-		if actual != tc.Expected {
-			t.Fatalf("Test %d, expected:\n\n`%s`\n\nActual Output:\n\n`%s`", i, tc.Expected, actual)
+		f := NewReflow(tc.Limit)
+		f.Write([]byte(tc.Input))
+		f.Close()
+
+		if f.String() != tc.Expected {
+			t.Errorf("Test %d, expected:\n\n`%s`\n\nActual Output:\n\n`%s`", i, tc.Expected, f.String())
 		}
+	}
+}
+
+func TestReflowString(t *testing.T) {
+	actual := ReflowString("foo bar", 3)
+	expected := "foo\nbar"
+	if actual != expected {
+		t.Errorf("expected:\n\n`%s`\n\nActual Output:\n\n`%s`", expected, actual)
 	}
 }
