@@ -19,17 +19,21 @@ Hello
 World!
 ```
 
-You can also customize reflow's behavior:
+Reflow is compatible with the `io.Writer` / `io.WriteCloser` interfaces:
+```go
+f := reflow.NewReflow(limit)
+f.Write(b)
+f.Close()
+
+fmt.Println(f.String())
+```
+
+Customize reflow's behavior:
 
 ```go
 f := reflow.NewReflow(limit)
 f.Breakpoints = []rune{':', ','}
 f.Newline = []rune{'\r'}
-
-f.Write(b)
-f.Close()
-
-fmt.Println(f.String())
 ```
 
 ## ANSI Example
