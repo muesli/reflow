@@ -26,7 +26,7 @@ type Reflow struct {
 	ansi    bool
 }
 
-// NewRelow returns a new instance of Reflow, initialized with defaults.
+// NewReflow returns a new instance of Reflow, initialized with defaults.
 func NewReflow(limit int) *Reflow {
 	return &Reflow{
 		Limit:       limit,
@@ -45,7 +45,7 @@ func ReflowBytes(b []byte, limit int) []byte {
 	return f.Bytes()
 }
 
-// ReflowBytes is shorthand for declaring a new default Reflow instance,
+// ReflowString is shorthand for declaring a new default Reflow instance,
 // used to immediately reflow a string.
 func ReflowString(s string, limit int) string {
 	return string(ReflowBytes([]byte(s), limit))
@@ -140,12 +140,12 @@ func (w *Reflow) Close() error {
 	return nil
 }
 
-// Returns the reflow result as a byte slice.
+// Bytes returns the reflow result as a byte slice.
 func (w *Reflow) Bytes() []byte {
 	return w.buf.Bytes()
 }
 
-// Returns the reflow result as a string.
+// String returns the reflow result as a string.
 func (w *Reflow) String() string {
 	return w.buf.String()
 }
