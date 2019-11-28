@@ -30,6 +30,16 @@ f.Close()
 fmt.Println(f.String())
 ```
 
+## ANSI Example
+
+```go
+    s := reflow.ReflowString("I really \x1B[38;2;249;38;114mlove\x1B[0m Go!")
+    fmt.Println(s)
+```
+
+Result:
+![ANSI Example Output](https://github.com/muesli/reflow/blob/master/reflow.png)
+
 ## Development
 
 [![GoDoc](https://godoc.org/github.com/golang/gddo?status.svg)](https://godoc.org/github.com/muesli/reflow)
