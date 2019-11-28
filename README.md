@@ -1,5 +1,34 @@
 # reflow
-Reflow text for terminal output
+Reflow lets you word-wrap strings or entire blocks of text.
+It conveniently follows the `io.Writer` / `io.CloseWriter` interface and
+supports ANSI escape sequences. This means you can style your terminal output
+without it affecting the word-wrapping algorithm.
+
+## Usage
+
+```go
+s := reflow.ReflowString("Hello World!", 5)
+fmt.Println(s)
+```
+
+Result:
+```
+Hello
+World!
+```
+
+You can also customize reflow's behavior:
+
+```go
+f := NewReflow(limit)
+f.Breakpoints = []rune{':', ','}
+f.Newline = []rune{'\r'}
+
+f.Write(b)
+f.Close()
+
+fmt.Println(f.String())
+```
 
 ## Development
 
