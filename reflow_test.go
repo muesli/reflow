@@ -10,7 +10,13 @@ func TestReflow(t *testing.T) {
 		Expected string
 		Limit    int
 	}{
-		// No-op, should pass through:
+		// No-op, should pass through, including trailing whitespace:
+		{
+			"foobar\n ",
+			"foobar\n ",
+			0,
+		},
+		// Nothing to wrap here, should pass through:
 		{
 			"foo",
 			"foo",
