@@ -20,7 +20,7 @@ World!
 You can also customize reflow's behavior:
 
 ```go
-f := NewReflow(limit)
+f := reflow.NewReflow(limit)
 f.Breakpoints = []rune{':', ','}
 f.Newline = []rune{'\r'}
 
