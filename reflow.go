@@ -16,11 +16,35 @@ type Reflow struct {
 	Newline     []rune
 
 	buf   bytes.Buffer
-	word  bytes.Buffer
 	space bytes.Buffer
+	word  ANSIWord
 
 	lineLen int
 	ansi    bool
+}
+
+type ANSIWord struct {
+	bytes.Buffer
+}
+
+func (w ANSIWord) PrintableLen() int {
+	var n int
+	var ansi bool
+	for _, c := range w.String() {
+		if c == '\x1B' {
+			// ANSI escape sequence
+			ansi = true
+		} else if ansi {
+			if (c >= 0x40 && c <= 0x5a) || (c >= 0x61 && c <= 0x7a) {
+				// ANSI sequence terminated
+				ansi = false
+			}
+		} else {
+			n++
+		}
+	}
+
+	return n
 }
 
 func NewReflow(limit int) *Reflow {
@@ -52,7 +76,7 @@ func (w *Reflow) addSpace() {
 func (w *Reflow) addWord() {
 	if w.word.Len() > 0 {
 		w.addSpace()
-		w.lineLen += w.word.Len()
+		w.lineLen += w.word.PrintableLen()
 		w.buf.Write(w.word.Bytes())
 		w.word.Reset()
 	}
@@ -77,13 +101,10 @@ func (w *Reflow) Write(b []byte) (int, error) {
 	for _, c := range string(b) {
 		if c == '\x1B' {
 			// ANSI escape sequence
-			w.addSpace()
-			w.addWord()
-
-			w.buf.WriteRune(c)
+			w.word.WriteRune(c)
 			w.ansi = true
 		} else if w.ansi {
-			w.buf.WriteRune(c)
+			w.word.WriteRune(c)
 			if (c >= 0x40 && c <= 0x5a) || (c >= 0x61 && c <= 0x7a) {
 				// ANSI sequence terminated
 				w.ansi = false
@@ -117,7 +138,7 @@ func (w *Reflow) Write(b []byte) (int, error) {
 
 			// add a line break if the current word would exceed the line's
 			// character limit
-			if w.lineLen+w.space.Len()+w.word.Len() > w.Limit && w.word.Len() < w.Limit {
+			if w.lineLen+w.space.Len()+w.word.PrintableLen() > w.Limit && w.word.PrintableLen() < w.Limit {
 				w.addNewLine()
 			}
 		}
