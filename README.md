@@ -1,6 +1,6 @@
 # reflow
 Reflow lets you word-wrap strings or entire blocks of text.
-It conveniently follows the `io.Writer` / `io.CloseWriter` interface and
+It conveniently follows the `io.Writer` / `io.WriteCloser` interface and
 supports ANSI escape sequences. This means you can style your terminal output
 without it affecting the word-wrapping algorithm.
 
