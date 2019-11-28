@@ -33,8 +33,8 @@ fmt.Println(f.String())
 ## ANSI Example
 
 ```go
-    s := reflow.ReflowString("I really \x1B[38;2;249;38;114mlove\x1B[0m Go!")
-    fmt.Println(s)
+s := reflow.ReflowString("I really \x1B[38;2;249;38;114mlove\x1B[0m Go!")
+fmt.Println(s)
 ```
 
 Result:
