@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestWrapString(t *testing.T) {
+func TestReflow(t *testing.T) {
 	tt := []struct {
 		Input    string
 		Expected string

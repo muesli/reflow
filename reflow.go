@@ -10,6 +10,9 @@ var (
 	defaultNewline     = []rune{'\n'}
 )
 
+// Reflow contains settings and state for customisable text reflowing with
+// support for ANSI escape sequences. This means you can style your terminal
+// output without affecting the word wrapping algorithm.
 type Reflow struct {
 	Limit       int
 	Breakpoints []rune
@@ -23,6 +26,7 @@ type Reflow struct {
 	ansi    bool
 }
 
+// NewRelow returns a new instance of Reflow, initialized with defaults.
 func NewReflow(limit int) *Reflow {
 	return &Reflow{
 		Limit:       limit,
@@ -31,6 +35,8 @@ func NewReflow(limit int) *Reflow {
 	}
 }
 
+// ReflowBytes is shorthand for declaring a new default Reflow instance,
+// used to immediately reflow a byte slice.
 func ReflowBytes(b []byte, limit int) []byte {
 	f := NewReflow(limit)
 	_, _ = f.Write(b)
@@ -39,6 +45,8 @@ func ReflowBytes(b []byte, limit int) []byte {
 	return f.Bytes()
 }
 
+// ReflowBytes is shorthand for declaring a new default Reflow instance,
+// used to immediately reflow a string.
 func ReflowString(s string, limit int) string {
 	return string(ReflowBytes([]byte(s), limit))
 }
@@ -73,6 +81,7 @@ func inGroup(a []rune, c rune) bool {
 	return false
 }
 
+// Write is used to write more content to the reflow buffer.
 func (w *Reflow) Write(b []byte) (int, error) {
 	for _, c := range string(b) {
 		if c == '\x1B' {
@@ -124,15 +133,19 @@ func (w *Reflow) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
+// Close will finish the reflow operation. Always call it before trying to
+// retrieve the final result.
 func (w *Reflow) Close() error {
 	w.addWord()
 	return nil
 }
 
+// Returns the reflow result as a byte slice.
 func (w *Reflow) Bytes() []byte {
 	return w.buf.Bytes()
 }
 
+// Returns the reflow result as a string.
 func (w *Reflow) String() string {
 	return w.buf.String()
 }
