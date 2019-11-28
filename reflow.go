@@ -83,6 +83,10 @@ func inGroup(a []rune, c rune) bool {
 
 // Write is used to write more content to the reflow buffer.
 func (w *Reflow) Write(b []byte) (int, error) {
+	if w.Limit == 0 {
+		return w.buf.Write(b)
+	}
+
 	for _, c := range string(b) {
 		if c == '\x1B' {
 			// ANSI escape sequence
