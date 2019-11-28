@@ -35,6 +35,12 @@ func TestReflow(t *testing.T) {
 			"foo-\nfoobar",
 			4,
 		},
+		// Space buffer needs to be emptied before breakpoints:
+		{
+			"foo --bar",
+			"foo --bar",
+			9,
+		},
 		// Lines are broken at whitespace, even if words
 		// are too long. We do not break words:
 		{

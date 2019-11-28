@@ -119,6 +119,7 @@ func (w *Reflow) Write(b []byte) (int, error) {
 			w.space.WriteRune(c)
 		} else if inGroup(w.Breakpoints, c) {
 			// valid breakpoint
+			w.addSpace()
 			w.addWord()
 			w.buf.WriteRune(c)
 		} else {
