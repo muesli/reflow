@@ -109,7 +109,10 @@ func TestReflow(t *testing.T) {
 
 	for i, tc := range tt {
 		f := NewReflow(tc.Limit)
-		f.Write([]byte(tc.Input))
+		_, err := f.Write([]byte(tc.Input))
+		if err != nil {
+			t.Error(err)
+		}
 		f.Close()
 
 		if f.String() != tc.Expected {
