@@ -14,9 +14,10 @@ var (
 // support for ANSI escape sequences. This means you can style your terminal
 // output without affecting the word wrapping algorithm.
 type Reflow struct {
-	Limit       int
-	Breakpoints []rune
-	Newline     []rune
+	Limit        int
+	Breakpoints  []rune
+	Newline      []rune
+	KeepNewlines bool
 
 	buf   bytes.Buffer
 	space bytes.Buffer
@@ -29,9 +30,10 @@ type Reflow struct {
 // NewReflow returns a new instance of Reflow, initialized with defaults.
 func NewReflow(limit int) *Reflow {
 	return &Reflow{
-		Limit:       limit,
-		Breakpoints: defaultBreakpoints,
-		Newline:     defaultNewline,
+		Limit:        limit,
+		Breakpoints:  defaultBreakpoints,
+		Newline:      defaultNewline,
+		KeepNewlines: true,
 	}
 }
 
@@ -98,7 +100,7 @@ func (w *Reflow) Write(b []byte) (int, error) {
 				// ANSI sequence terminated
 				w.ansi = false
 			}
-		} else if inGroup(w.Newline, c) {
+		} else if w.KeepNewlines && inGroup(w.Newline, c) {
 			// end of current line
 			// see if we can add the content of the space buffer to the current line
 			if w.word.Len() == 0 {
