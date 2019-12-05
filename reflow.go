@@ -35,9 +35,9 @@ func NewReflow(limit int) *Reflow {
 	}
 }
 
-// ReflowBytes is shorthand for declaring a new default Reflow instance,
+// Bytes is shorthand for declaring a new default Reflow instance,
 // used to immediately reflow a byte slice.
-func ReflowBytes(b []byte, limit int) []byte {
+func Bytes(b []byte, limit int) []byte {
 	f := NewReflow(limit)
 	_, _ = f.Write(b)
 	f.Close()
@@ -45,10 +45,10 @@ func ReflowBytes(b []byte, limit int) []byte {
 	return f.Bytes()
 }
 
-// ReflowString is shorthand for declaring a new default Reflow instance,
+// String is shorthand for declaring a new default Reflow instance,
 // used to immediately reflow a string.
-func ReflowString(s string, limit int) string {
-	return string(ReflowBytes([]byte(s), limit))
+func String(s string, limit int) string {
+	return string(Bytes([]byte(s), limit))
 }
 
 func (w *Reflow) addSpace() {

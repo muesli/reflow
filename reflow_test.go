@@ -122,7 +122,7 @@ func TestReflow(t *testing.T) {
 }
 
 func TestReflowString(t *testing.T) {
-	actual := ReflowString("foo bar", 3)
+	actual := String("foo bar", 3)
 	expected := "foo\nbar"
 	if actual != expected {
 		t.Errorf("expected:\n\n`%s`\n\nActual Output:\n\n`%s`", expected, actual)

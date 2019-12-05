@@ -9,7 +9,7 @@ without it affecting the word-wrapping algorithm.
 ## Usage
 
 ```go
-s := reflow.ReflowString("Hello World!", 5)
+s := reflow.String("Hello World!", 5)
 fmt.Println(s)
 ```
 
@@ -39,7 +39,7 @@ f.Newline = []rune{'\r'}
 ## ANSI Example
 
 ```go
-s := reflow.ReflowString("I really \x1B[38;2;249;38;114mlove\x1B[0m Go!", 8)
+s := reflow.String("I really \x1B[38;2;249;38;114mlove\x1B[0m Go!", 8)
 fmt.Println(s)
 ```
 
