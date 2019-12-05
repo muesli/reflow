@@ -103,7 +103,7 @@ func TestReflow(t *testing.T) {
 		// Unless we ask them to be ignored:
 		{
 			"\nfoo bar\n\n\nfoo\n",
-			"\nfoo\nbar\nfoo",
+			"foo\nbar\nfoo",
 			4,
 			false,
 		},

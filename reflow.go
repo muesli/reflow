@@ -2,6 +2,7 @@ package reflow
 
 import (
 	"bytes"
+	"strings"
 	"unicode"
 )
 
@@ -89,7 +90,12 @@ func (w *Reflow) Write(b []byte) (int, error) {
 		return w.buf.Write(b)
 	}
 
-	for _, c := range string(b) {
+	s := string(b)
+	if !w.KeepNewlines {
+		s = strings.ReplaceAll(strings.TrimSpace(s), "\n", " ")
+	}
+
+	for _, c := range s {
 		if c == '\x1B' {
 			// ANSI escape sequence
 			w.word.WriteRune(c)
@@ -100,7 +106,7 @@ func (w *Reflow) Write(b []byte) (int, error) {
 				// ANSI sequence terminated
 				w.ansi = false
 			}
-		} else if w.KeepNewlines && inGroup(w.Newline, c) {
+		} else if inGroup(w.Newline, c) {
 			// end of current line
 			// see if we can add the content of the space buffer to the current line
 			if w.word.Len() == 0 {
