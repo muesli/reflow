@@ -1,6 +1,10 @@
 package reflow
 
-import "bytes"
+import (
+	"bytes"
+
+	"github.com/mattn/go-runewidth"
+)
 
 // ANSIBuffer is a buffer aware of ANSI escape sequences.
 type ANSIBuffer struct {
@@ -21,7 +25,7 @@ func (w ANSIBuffer) PrintableRuneCount() int {
 				ansi = false
 			}
 		} else {
-			n++
+			n += runewidth.StringWidth(string(c))
 		}
 	}
 
