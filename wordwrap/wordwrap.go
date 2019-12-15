@@ -95,7 +95,7 @@ func (w *WordWrap) Write(b []byte) (int, error) {
 
 	s := string(b)
 	if !w.KeepNewlines {
-		s = strings.ReplaceAll(strings.TrimSpace(s), "\n", " ")
+		s = strings.Replace(strings.TrimSpace(s), "\n", " ", -1)
 	}
 
 	for _, c := range s {
