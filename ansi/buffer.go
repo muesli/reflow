@@ -1,4 +1,4 @@
-package reflow
+package ansi
 
 import (
 	"bytes"
@@ -6,13 +6,13 @@ import (
 	"github.com/mattn/go-runewidth"
 )
 
-// ANSIBuffer is a buffer aware of ANSI escape sequences.
-type ANSIBuffer struct {
+// Buffer is a buffer aware of ANSI escape sequences.
+type Buffer struct {
 	bytes.Buffer
 }
 
 // PrintableRuneCount returns the amount of printable runes in the buffer.
-func (w ANSIBuffer) PrintableRuneCount() int {
+func (w Buffer) PrintableRuneCount() int {
 	var n int
 	var ansi bool
 	for _, c := range w.String() {

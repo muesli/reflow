@@ -1,9 +1,11 @@
-package reflow
+package wordwrap
 
 import (
 	"bytes"
 	"strings"
 	"unicode"
+
+	"github.com/muesli/reflow/ansi"
 )
 
 var (
@@ -11,10 +13,10 @@ var (
 	defaultNewline     = []rune{'\n'}
 )
 
-// Reflow contains settings and state for customisable text reflowing with
+// WordWrap contains settings and state for customisable text reflowing with
 // support for ANSI escape sequences. This means you can style your terminal
 // output without affecting the word wrapping algorithm.
-type Reflow struct {
+type WordWrap struct {
 	Limit        int
 	Breakpoints  []rune
 	Newline      []rune
@@ -22,15 +24,16 @@ type Reflow struct {
 
 	buf   bytes.Buffer
 	space bytes.Buffer
-	word  ANSIBuffer
+	word  ansi.Buffer
 
 	lineLen int
 	ansi    bool
 }
 
-// NewReflow returns a new instance of Reflow, initialized with defaults.
-func NewReflow(limit int) *Reflow {
-	return &Reflow{
+// NewWriter returns a new instance of a word-wrapping writer, initialized with
+// default settings.
+func NewWriter(limit int) *WordWrap {
+	return &WordWrap{
 		Limit:        limit,
 		Breakpoints:  defaultBreakpoints,
 		Newline:      defaultNewline,
@@ -38,29 +41,29 @@ func NewReflow(limit int) *Reflow {
 	}
 }
 
-// Bytes is shorthand for declaring a new default Reflow instance,
-// used to immediately reflow a byte slice.
+// Bytes is shorthand for declaring a new default WordWrap instance,
+// used to immediately word-wrap a byte slice.
 func Bytes(b []byte, limit int) []byte {
-	f := NewReflow(limit)
+	f := NewWriter(limit)
 	_, _ = f.Write(b)
 	f.Close()
 
 	return f.Bytes()
 }
 
-// String is shorthand for declaring a new default Reflow instance,
-// used to immediately reflow a string.
+// String is shorthand for declaring a new default WordWrap instance,
+// used to immediately word-wrap a string.
 func String(s string, limit int) string {
 	return string(Bytes([]byte(s), limit))
 }
 
-func (w *Reflow) addSpace() {
+func (w *WordWrap) addSpace() {
 	w.lineLen += w.space.Len()
 	w.buf.Write(w.space.Bytes())
 	w.space.Reset()
 }
 
-func (w *Reflow) addWord() {
+func (w *WordWrap) addWord() {
 	if w.word.Len() > 0 {
 		w.addSpace()
 		w.lineLen += w.word.PrintableRuneCount()
@@ -69,7 +72,7 @@ func (w *Reflow) addWord() {
 	}
 }
 
-func (w *Reflow) addNewLine() {
+func (w *WordWrap) addNewLine() {
 	w.buf.WriteRune('\n')
 	w.lineLen = 0
 	w.space.Reset()
@@ -84,8 +87,8 @@ func inGroup(a []rune, c rune) bool {
 	return false
 }
 
-// Write is used to write more content to the reflow buffer.
-func (w *Reflow) Write(b []byte) (int, error) {
+// Write is used to write more content to the word-wrap buffer.
+func (w *WordWrap) Write(b []byte) (int, error) {
 	if w.Limit == 0 {
 		return w.buf.Write(b)
 	}
@@ -146,19 +149,19 @@ func (w *Reflow) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
-// Close will finish the reflow operation. Always call it before trying to
+// Close will finish the word-wrap operation. Always call it before trying to
 // retrieve the final result.
-func (w *Reflow) Close() error {
+func (w *WordWrap) Close() error {
 	w.addWord()
 	return nil
 }
 
-// Bytes returns the reflow result as a byte slice.
-func (w *Reflow) Bytes() []byte {
+// Bytes returns the word-wrap result as a byte slice.
+func (w *WordWrap) Bytes() []byte {
 	return w.buf.Bytes()
 }
 
-// String returns the reflow result as a string.
-func (w *Reflow) String() string {
+// String returns the word-wrap result as a string.
+func (w *WordWrap) String() string {
 	return w.buf.String()
 }

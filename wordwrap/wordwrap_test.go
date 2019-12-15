@@ -1,10 +1,10 @@
-package reflow
+package wordwrap
 
 import (
 	"testing"
 )
 
-func TestReflow(t *testing.T) {
+func TestWordWrap(t *testing.T) {
 	tt := []struct {
 		Input        string
 		Expected     string
@@ -131,7 +131,7 @@ func TestReflow(t *testing.T) {
 	}
 
 	for i, tc := range tt {
-		f := NewReflow(tc.Limit)
+		f := NewWriter(tc.Limit)
 		f.KeepNewlines = tc.KeepNewlines
 
 		_, err := f.Write([]byte(tc.Input))
@@ -146,7 +146,7 @@ func TestReflow(t *testing.T) {
 	}
 }
 
-func TestReflowString(t *testing.T) {
+func TestWordWrapString(t *testing.T) {
 	actual := String("foo bar", 3)
 	expected := "foo\nbar"
 	if actual != expected {
