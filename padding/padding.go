@@ -8,7 +8,7 @@ import (
 	"github.com/muesli/reflow/ansi"
 )
 
-type PaddingFunc = func(w io.Writer)
+type PaddingFunc func(w io.Writer)
 
 type Writer struct {
 	Forward *ansi.Writer

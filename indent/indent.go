@@ -7,7 +7,7 @@ import (
 	"github.com/muesli/reflow/ansi"
 )
 
-type IndentFunc = func(w io.Writer)
+type IndentFunc func(w io.Writer)
 
 type Writer struct {
 	Forward    *ansi.Writer
