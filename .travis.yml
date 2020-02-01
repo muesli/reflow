@@ -39,7 +39,8 @@ before_install:
   - if [[ $TRAVIS_GO_VERSION == 1.13* ]]; then go get github.com/axw/gocov/gocov github.com/modocache/gover github.com/mattn/goveralls; fi
 
 script:
-  - go test -tags ci -race -covermode atomic -coverprofile=profile.cov ./...
+  - go test -v -tags ci ./...
+  - if [[ $TRAVIS_GO_VERSION == 1.13* ]]; then go test -tags ci -race -covermode atomic -coverprofile=profile.cov ./...; fi
   - if [[ $TRAVIS_GO_VERSION == 1.13* ]]; then $GOPATH/bin/goveralls -coverprofile=profile.cov -service=travis-ci; fi
 
 notifications:
