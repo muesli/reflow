@@ -1,6 +1,7 @@
 package indent
 
 import (
+	"bytes"
 	"io"
 	"strings"
 
@@ -10,20 +11,39 @@ import (
 type IndentFunc func(w io.Writer)
 
 type Writer struct {
-	Forward    *ansi.Writer
 	Indent     uint
 	IndentFunc IndentFunc
 
+	ansiWriter *ansi.Writer
+	buf        bytes.Buffer
 	skipIndent bool
 	ansi       bool
 }
 
-func NewWriter(w *ansi.Writer, indent uint, indentFunc IndentFunc) *Writer {
-	return &Writer{
-		Forward:    w,
+func NewWriter(indent uint, indentFunc IndentFunc) *Writer {
+	w := &Writer{
 		Indent:     indent,
 		IndentFunc: indentFunc,
 	}
+	w.ansiWriter = &ansi.Writer{
+		Forward: &w.buf,
+	}
+	return w
+}
+
+// Bytes is shorthand for declaring a new default indent-writer instance,
+// used to immediately indent a byte slice.
+func Bytes(b []byte, indent uint) []byte {
+	f := NewWriter(indent, nil)
+	_, _ = f.Write(b)
+
+	return f.Bytes()
+}
+
+// String is shorthand for declaring a new default indent-writer instance,
+// used to immediately indent a string.
+func String(s string, indent uint) string {
+	return string(Bytes([]byte(s), indent))
 }
 
 // Write is used to write content to the indent buffer.
@@ -39,20 +59,20 @@ func (w *Writer) Write(b []byte) (int, error) {
 			}
 		} else {
 			if !w.skipIndent {
-				w.Forward.ResetAnsi()
+				w.ansiWriter.ResetAnsi()
 				if w.IndentFunc != nil {
 					for i := 0; i < int(w.Indent); i++ {
-						w.IndentFunc(w.Forward)
+						w.IndentFunc(w.ansiWriter)
 					}
 				} else {
-					_, err := w.Forward.Write([]byte(strings.Repeat(" ", int(w.Indent))))
+					_, err := w.ansiWriter.Write([]byte(strings.Repeat(" ", int(w.Indent))))
 					if err != nil {
 						return 0, err
 					}
 				}
 
 				w.skipIndent = true
-				w.Forward.RestoreAnsi()
+				w.ansiWriter.RestoreAnsi()
 			}
 
 			if c == '\n' {
@@ -61,11 +81,21 @@ func (w *Writer) Write(b []byte) (int, error) {
 			}
 		}
 
-		_, err := w.Forward.Write([]byte(string(c)))
+		_, err := w.ansiWriter.Write([]byte(string(c)))
 		if err != nil {
 			return 0, err
 		}
 	}
 
 	return len(b), nil
+}
+
+// Bytes returns the indented result as a byte slice.
+func (w *Writer) Bytes() []byte {
+	return w.buf.Bytes()
+}
+
+// String returns the indented result as a string.
+func (w *Writer) String() string {
+	return w.buf.String()
 }
