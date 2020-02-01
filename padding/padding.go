@@ -1,7 +1,9 @@
 package padding
 
 import (
+	"bytes"
 	"io"
+	"strings"
 
 	"github.com/mattn/go-runewidth"
 
@@ -11,20 +13,40 @@ import (
 type PaddingFunc func(w io.Writer)
 
 type Writer struct {
-	Forward *ansi.Writer
 	Padding uint
 	PadFunc PaddingFunc
 
-	lineLen int
-	ansi    bool
+	ansiWriter *ansi.Writer
+	buf        bytes.Buffer
+	lineLen    int
+	ansi       bool
 }
 
-func NewWriter(w *ansi.Writer, width uint, paddingFunc PaddingFunc) *Writer {
-	return &Writer{
-		Forward: w,
+func NewWriter(width uint, paddingFunc PaddingFunc) *Writer {
+	w := &Writer{
 		Padding: width,
 		PadFunc: paddingFunc,
 	}
+	w.ansiWriter = &ansi.Writer{
+		Forward: &w.buf,
+	}
+	return w
+}
+
+// Bytes is shorthand for declaring a new default padding-writer instance,
+// used to immediately pad a byte slice.
+func Bytes(b []byte, width uint) []byte {
+	f := NewWriter(width, nil)
+	_, _ = f.Write(b)
+	f.Close()
+
+	return f.Bytes()
+}
+
+// String is shorthand for declaring a new default padding-writer instance,
+// used to immediately pad a string.
+func String(s string, width uint) string {
+	return string(Bytes([]byte(s), width))
 }
 
 // Write is used to write content to the padding buffer.
@@ -43,21 +65,58 @@ func (w *Writer) Write(b []byte) (int, error) {
 
 			if c == '\n' {
 				// end of current line
-				if w.Padding > 0 && uint(w.lineLen) < w.Padding {
-					for i := 0; i < int(w.Padding)-w.lineLen; i++ {
-						w.PadFunc(w.Forward)
-					}
+				err := w.pad()
+				if err != nil {
+					return 0, err
 				}
-				w.Forward.ResetAnsi()
+				w.ansiWriter.ResetAnsi()
 				w.lineLen = 0
 			}
 		}
 
-		_, err := w.Forward.Write([]byte(string(c)))
+		_, err := w.ansiWriter.Write([]byte(string(c)))
 		if err != nil {
 			return 0, err
 		}
 	}
 
 	return len(b), nil
+}
+
+func (w *Writer) pad() error {
+	if w.Padding > 0 && uint(w.lineLen) < w.Padding {
+		if w.PadFunc != nil {
+			for i := 0; i < int(w.Padding)-w.lineLen; i++ {
+				w.PadFunc(w.ansiWriter)
+			}
+		} else {
+			_, err := w.ansiWriter.Write([]byte(strings.Repeat(" ", int(w.Padding)-w.lineLen)))
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+// Close will finish the padding operation. Always call it before trying to
+// retrieve the final result.
+func (w *Writer) Close() error {
+	// don't pad empty trailing lines
+	if w.lineLen == 0 {
+		return nil
+	}
+
+	return w.pad()
+}
+
+// Bytes returns the padded result as a byte slice.
+func (w *Writer) Bytes() []byte {
+	return w.buf.Bytes()
+}
+
+// String returns the padded result as a string.
+func (w *Writer) String() string {
+	return w.buf.String()
 }
