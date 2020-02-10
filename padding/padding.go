@@ -33,6 +33,16 @@ func NewWriter(width uint, paddingFunc PaddingFunc) *Writer {
 	return w
 }
 
+func NewWriterPipe(forward io.Writer, width uint, paddingFunc PaddingFunc) *Writer {
+	return &Writer{
+		Padding: width,
+		PadFunc: paddingFunc,
+		ansiWriter: &ansi.Writer{
+			Forward: forward,
+		},
+	}
+}
+
 // Bytes is shorthand for declaring a new default padding-writer instance,
 // used to immediately pad a byte slice.
 func Bytes(b []byte, width uint) []byte {

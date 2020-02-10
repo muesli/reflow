@@ -31,6 +31,16 @@ func NewWriter(indent uint, indentFunc IndentFunc) *Writer {
 	return w
 }
 
+func NewWriterPipe(forward io.Writer, indent uint, indentFunc IndentFunc) *Writer {
+	return &Writer{
+		Indent:     indent,
+		IndentFunc: indentFunc,
+		ansiWriter: &ansi.Writer{
+			Forward: forward,
+		},
+	}
+}
+
 // Bytes is shorthand for declaring a new default indent-writer instance,
 // used to immediately indent a byte slice.
 func Bytes(b []byte, indent uint) []byte {
