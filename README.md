@@ -103,7 +103,7 @@ s := padding.String("Hello", 8)
 fmt.Println(s)
 ```
 
-Result: `Hello   `
+Result: `Hello___` (the underlined portion represents 3 spaces)
 
 There is also a padding Writer, which is compatible with the `io.WriteCloser`
 interface:
