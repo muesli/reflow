@@ -50,6 +50,24 @@ func TestIndent(t *testing.T) {
 	}
 }
 
+func TestIndentWriter(t *testing.T) {
+	f := NewWriter(4, nil)
+
+	_, err := f.Write([]byte("foo\n"))
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = f.Write([]byte("bar"))
+	if err != nil {
+		t.Error(err)
+	}
+
+	exp := "    foo\n    bar"
+	if f.String() != exp {
+		t.Errorf("expected:\n\n`%s`\n\nActual Output:\n\n`%s`", exp, f.String())
+	}
+}
+
 func TestIndentString(t *testing.T) {
 	actual := String("foobar", 3)
 	expected := "   foobar"

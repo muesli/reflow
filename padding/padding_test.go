@@ -57,6 +57,25 @@ func TestPadding(t *testing.T) {
 	}
 }
 
+func TestPaddingWriter(t *testing.T) {
+	f := NewWriter(6, nil)
+
+	_, err := f.Write([]byte("foo\n"))
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = f.Write([]byte("bar"))
+	if err != nil {
+		t.Error(err)
+	}
+	f.Close()
+
+	exp := "foo   \nbar   "
+	if f.String() != exp {
+		t.Errorf("expected:\n\n`%s`\n\nActual Output:\n\n`%s`", exp, f.String())
+	}
+}
+
 func TestPaddingString(t *testing.T) {
 	actual := String("foobar", 10)
 	expected := "foobar    "
