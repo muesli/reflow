@@ -156,12 +156,12 @@ func (w *WordWrap) Close() error {
 	return nil
 }
 
-// Bytes returns the word-wrap result as a byte slice.
+// Bytes returns the word-wrapped result as a byte slice.
 func (w *WordWrap) Bytes() []byte {
 	return w.buf.Bytes()
 }
 
-// String returns the word-wrap result as a string.
+// String returns the word-wrapped result as a string.
 func (w *WordWrap) String() string {
 	return w.buf.String()
 }
