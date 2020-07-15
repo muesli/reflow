@@ -13,9 +13,14 @@ type Buffer struct {
 
 // PrintableRuneCount returns the amount of printable runes in the buffer.
 func (w Buffer) PrintableRuneCount() int {
+	return PrintableRuneCount(w.String())
+}
+
+func PrintableRuneCount(s string) int {
 	var n int
 	var ansi bool
-	for _, c := range w.String() {
+
+	for _, c := range s {
 		if c == '\x1B' {
 			// ANSI escape sequence
 			ansi = true
