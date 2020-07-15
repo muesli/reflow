@@ -66,7 +66,7 @@ func (w *WordWrap) addSpace() {
 func (w *WordWrap) addWord() {
 	if w.word.Len() > 0 {
 		w.addSpace()
-		w.lineLen += w.word.PrintableRuneCount()
+		w.lineLen += w.word.PrintableRuneWidth()
 		w.buf.Write(w.word.Bytes())
 		w.word.Reset()
 	}
@@ -139,8 +139,8 @@ func (w *WordWrap) Write(b []byte) (int, error) {
 
 			// add a line break if the current word would exceed the line's
 			// character limit
-			if w.lineLen+w.space.Len()+w.word.PrintableRuneCount() > w.Limit &&
-				w.word.PrintableRuneCount() < w.Limit {
+			if w.lineLen+w.space.Len()+w.word.PrintableRuneWidth() > w.Limit &&
+				w.word.PrintableRuneWidth() < w.Limit {
 				w.addNewLine()
 			}
 		}

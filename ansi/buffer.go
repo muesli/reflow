@@ -11,12 +11,12 @@ type Buffer struct {
 	bytes.Buffer
 }
 
-// PrintableRuneCount returns the amount of printable runes in the buffer.
-func (w Buffer) PrintableRuneCount() int {
-	return PrintableRuneCount(w.String())
+// PrintableRuneWidth returns the width of all printable runes in the buffer.
+func (w Buffer) PrintableRuneWidth() int {
+	return PrintableRuneWidth(w.String())
 }
 
-func PrintableRuneCount(s string) int {
+func PrintableRuneWidth(s string) int {
 	var n int
 	var ansi bool
 
