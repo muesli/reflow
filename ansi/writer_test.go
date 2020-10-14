@@ -2,6 +2,7 @@ package ansi
 
 import (
 	"bytes"
+	"errors"
 	"io/ioutil"
 	"testing"
 )
@@ -26,6 +27,23 @@ func TestWriter_Write(t *testing.T) {
 
 	if ls := w.LastSequence(); ls != "" {
 		t.Fatalf("LastSequence should be empty, got %s", ls)
+	}
+}
+
+type fakeWriter struct{}
+
+func (fakeWriter) Write(_ []byte) (int, error) {
+	return 0, errors.New("fake error")
+}
+
+func TestWriter_Write_Error(t *testing.T) {
+
+	w := &Writer{Forward: fakeWriter{}}
+
+	_, err := w.Write([]byte("foo"))
+
+	if err == nil {
+		t.Fatal("err shouldn't be nil")
 	}
 }
 
