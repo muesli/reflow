@@ -4,7 +4,7 @@ import (
 	"strings"
 )
 
-// String automatically detects the maximumen identation shared by all lines and
+// String automatically detects the maximum indentation shared by all lines and
 // trims them accordingly.
 func String(s string) string {
 	lines := strings.Split(s, "\n")
