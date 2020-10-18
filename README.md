@@ -90,6 +90,30 @@ f.Close()
 fmt.Println(f.String())
 ```
 
+## Dedentation
+
+The `dedent` package lets you dedent strings or entire blocks of text.
+
+### Usage
+
+```go
+import "github.com/muesli/reflow/dedent"
+
+input := `    Hello World!
+  Hello World!
+`
+
+s := dedent.String(input)
+fmt.Println(s)
+```
+
+Result:
+
+```
+  Hello World!
+Hello World!
+```
+
 ## Padding
 
 The `padding` package lets you pad strings or entire blocks of text.
