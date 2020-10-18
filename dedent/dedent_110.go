@@ -1,9 +1,8 @@
-// +build !go1.10
+// +build go1.10
 
 package dedent
 
 import (
-	"bytes"
 	"strings"
 )
 
@@ -28,7 +27,7 @@ func String(s string) string {
 		return s
 	}
 
-	var buf bytes.Buffer
+	var buf strings.Builder
 	for _, l := range lines {
 		l = strings.TrimPrefix(l, strings.Repeat(" ", minIndent))
 		buf.WriteString(l + "\n")
