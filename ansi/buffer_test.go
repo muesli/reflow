@@ -15,7 +15,8 @@ func TestBuffer_PrintableRuneWidth(t *testing.T) {
 	}
 }
 
-func BenchmarkPrintableRuneWidth(b *testing.B) {
+// go test -bench=Benchmark_PrintableRuneWidth -benchmem -count=4
+func Benchmark_PrintableRuneWidth(b *testing.B) {
 	s := "\x1B[38;2;249;38;114mfoo"
 	var n int
 

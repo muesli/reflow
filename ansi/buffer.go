@@ -30,7 +30,7 @@ func PrintableRuneWidth(s string) int {
 				ansi = false
 			}
 		} else {
-			n += runewidth.StringWidth(string(c))
+			n += runewidth.RuneWidth(c)
 		}
 	}
 
