@@ -18,7 +18,7 @@ func TestWriter_Write(t *testing.T) {
 	w.RestoreAnsi()
 
 	if err != nil {
-		t.Fatal("err should be nil")
+		t.Fatalf("err should be nil, but got %v", err)
 	}
 
 	if l := len(buf); n != l {
@@ -30,20 +30,21 @@ func TestWriter_Write(t *testing.T) {
 	}
 }
 
+var fakeErr = errors.New("fake error")
+
 type fakeWriter struct{}
 
 func (fakeWriter) Write(_ []byte) (int, error) {
-	return 0, errors.New("fake error")
+	return 0, fakeErr
 }
 
 func TestWriter_Write_Error(t *testing.T) {
-
 	w := &Writer{Forward: fakeWriter{}}
 
 	_, err := w.Write([]byte("foo"))
 
-	if err == nil {
-		t.Fatal("err shouldn't be nil")
+	if err != fakeErr {
+		t.Fatalf("err should be fakeErr, but got %v", err)
 	}
 }
 
@@ -62,7 +63,7 @@ func BenchmarkWriter_Write(b *testing.B) {
 	}
 
 	if err != nil {
-		b.Fatal("err should be nil")
+		b.Fatalf("err should be nil, but got %v", err)
 	}
 
 	if l := len(buf); n != l {
