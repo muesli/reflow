@@ -53,8 +53,9 @@ func TestWriter_Write_Error(t *testing.T) {
 	}
 }
 
+// go test -bench=BenchmarkWriter_Write -benchmem -count=4
 func BenchmarkWriter_Write(b *testing.B) {
-	buf := []byte("\x1B[38;2;249;38;114mfoo\x1B[0m")
+	buf := []byte("\x1B[38;2;249;38;114m你好reflow\x1B[0m")
 	w := &Writer{Forward: ioutil.Discard}
 	var (
 		n   int
@@ -80,14 +81,21 @@ func BenchmarkWriter_Write(b *testing.B) {
 	}
 }
 
+func TestWriter_LastSequence(t *testing.T) {
+	w := &Writer{}
+	if s := w.LastSequence(); s != "" {
+		t.Fatalf("LastSequence should be empty, but got %s", s)
+	}
+}
+
 func TestWriter_ResetAnsi(t *testing.T) {
 	b := &bytes.Buffer{}
 	w := &Writer{Forward: b}
 
 	w.ResetAnsi()
 
-	if b.String() != "" {
-		t.Fatal("b should be empty")
+	if s := b.String(); s != "" {
+		t.Fatalf("b should be empty, but got %s", s)
 	}
 
 	w.seqchanged = true
@@ -101,7 +109,10 @@ func TestWriter_ResetAnsi(t *testing.T) {
 
 func TestWriter_RestoreAnsi(t *testing.T) {
 	b := &bytes.Buffer{}
-	w := &Writer{Forward: b, lastseq: "\x1B[38;2;249;38;114m"}
+
+	lastseq := bytes.Buffer{}
+	lastseq.WriteString("\x1B[38;2;249;38;114m")
+	w := &Writer{Forward: b, lastseq: lastseq}
 
 	w.RestoreAnsi()
 
