@@ -32,6 +32,7 @@ func (w *Writer) Write(b []byte) (int, error) {
 				if strings.HasSuffix(w.ansiseq, "[0m") {
 					// reset sequence
 					w.lastseq = ""
+					w.seqchanged = false
 				} else if strings.HasSuffix(w.ansiseq, "m") {
 					// color code
 					w.lastseq = w.ansiseq
