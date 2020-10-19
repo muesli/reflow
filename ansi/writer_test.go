@@ -8,8 +8,9 @@ import (
 )
 
 func TestWriter_Write(t *testing.T) {
-	buf := []byte("\x1B[38;2;249;38;114mfoo\x1B[0m")
-	w := &Writer{Forward: ioutil.Discard}
+	buf := []byte("\x1B[38;2;249;38;114m你好reflow\x1B[0m")
+	forward := &bytes.Buffer{}
+	w := &Writer{Forward: forward}
 
 	n, err := w.Write(buf)
 
@@ -27,6 +28,10 @@ func TestWriter_Write(t *testing.T) {
 
 	if ls := w.LastSequence(); ls != "" {
 		t.Fatalf("LastSequence should be empty, got %s", ls)
+	}
+
+	if b := forward.Bytes(); !bytes.Equal(b, buf) {
+		t.Fatalf("forward should be wrote by %v, but got %v", buf, b)
 	}
 }
 
