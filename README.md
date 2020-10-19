@@ -14,8 +14,6 @@ escape sequences without them affecting the reflow operations & algorithms.
 
 The `wordwrap` package lets you word-wrap strings or entire blocks of text.
 
-### Usage
-
 ```go
 import "github.com/muesli/reflow/wordwrap"
 
@@ -62,8 +60,6 @@ Result:
 
 The `indent` package lets you indent strings or entire blocks of text.
 
-### Usage
-
 ```go
 import "github.com/muesli/reflow/indent"
 
@@ -95,8 +91,6 @@ fmt.Println(f.String())
 
 The `dedent` package lets you dedent strings or entire blocks of text.
 
-### Usage
-
 ```go
 import "github.com/muesli/reflow/dedent"
 
@@ -118,8 +112,6 @@ Hello World!
 ## Padding
 
 The `padding` package lets you pad strings or entire blocks of text.
-
-### Usage
 
 ```go
 import "github.com/muesli/reflow/padding"
