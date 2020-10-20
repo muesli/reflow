@@ -66,11 +66,11 @@ func BenchmarkWriter_Write(b *testing.B) {
 		err error
 	)
 
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			n, err = w.Write(buf)
-		}
-	})
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		n, err = w.Write(buf)
+	}
 
 	if err != nil {
 		b.Fatalf("err should be nil, but got %v", err)
