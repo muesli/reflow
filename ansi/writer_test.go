@@ -8,6 +8,8 @@ import (
 )
 
 func TestWriter_Write(t *testing.T) {
+	t.Parallel()
+
 	buf := []byte("\x1B[38;2;249;38;114m你好reflow\x1B[0m")
 	forward := &bytes.Buffer{}
 	w := &Writer{Forward: forward}
@@ -44,6 +46,8 @@ func (fakeWriter) Write(_ []byte) (int, error) {
 }
 
 func TestWriter_Write_Error(t *testing.T) {
+	t.Parallel()
+
 	w := &Writer{Forward: fakeWriter{}}
 
 	_, err := w.Write([]byte("foo"))
@@ -57,31 +61,17 @@ func TestWriter_Write_Error(t *testing.T) {
 func BenchmarkWriter_Write(b *testing.B) {
 	buf := []byte("\x1B[38;2;249;38;114m你好reflow\x1B[0m")
 	w := &Writer{Forward: ioutil.Discard}
-	var (
-		n   int
-		err error
-	)
+
 	b.ReportAllocs()
 	b.ResetTimer()
-
 	for i := 0; i < b.N; i++ {
-		n, err = w.Write(buf)
-	}
-
-	if err != nil {
-		b.Fatalf("err should be nil, but got %v", err)
-	}
-
-	if l := len(buf); n != l {
-		b.Fatalf("n should be %d, got %d", l, n)
-	}
-
-	if ls := w.LastSequence(); ls != "" {
-		b.Fatalf("LastSequence should be empty, got %s", ls)
+		_, _ = w.Write(buf)
 	}
 }
 
 func TestWriter_LastSequence(t *testing.T) {
+	t.Parallel()
+
 	w := &Writer{}
 	if s := w.LastSequence(); s != "" {
 		t.Fatalf("LastSequence should be empty, but got %s", s)
@@ -89,6 +79,8 @@ func TestWriter_LastSequence(t *testing.T) {
 }
 
 func TestWriter_ResetAnsi(t *testing.T) {
+	t.Parallel()
+
 	b := &bytes.Buffer{}
 	w := &Writer{Forward: b}
 
@@ -108,6 +100,8 @@ func TestWriter_ResetAnsi(t *testing.T) {
 }
 
 func TestWriter_RestoreAnsi(t *testing.T) {
+	t.Parallel()
+
 	b := &bytes.Buffer{}
 
 	lastseq := bytes.Buffer{}
