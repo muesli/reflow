@@ -88,20 +88,13 @@ func TestIndentString(t *testing.T) {
 }
 
 func BenchmarkIndentString(b *testing.B) {
-	var actual string
-	expected := "  foo"
-
-	b.ReportAllocs()
-	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
+		b.ReportAllocs()
+		b.ResetTimer()
 		for pb.Next() {
-			actual = String("foo", 2)
+			String("foo", 2)
 		}
 	})
-
-	if actual != expected {
-		b.Errorf("expected:\n\n`%s`\n\nActual Output:\n\n`%s`", expected, actual)
-	}
 }
 
 func TestIndentWriterWithIndentFunc(t *testing.T) {
