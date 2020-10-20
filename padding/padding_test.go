@@ -56,7 +56,10 @@ func TestPadding(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		f.Close()
+
+		if err := f.Close(); err != nil {
+			t.Error(err)
+		}
 
 		if f.String() != tc.Expected {
 			t.Errorf("Test %d, expected:\n\n`%s`\n\nActual Output:\n\n`%s`", i, tc.Expected, f.String())
@@ -77,11 +80,17 @@ func TestPaddingWriter(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	f.Close()
+	if err := f.Close(); err != nil {
+		t.Error(err)
+	}
 
 	exp := "foo   \nbar   "
 	if f.String() != exp {
 		t.Errorf("expected:\n\n`%s`\n\nActual Output:\n\n`%s`", exp, f.String())
+	}
+
+	if _, err := f.Write([]byte("bar")); err != ErrClosed {
+		t.Error(err)
 	}
 }
 
@@ -114,7 +123,9 @@ func TestNewWriterPipe(t *testing.T) {
 	if _, err := f.Write([]byte("foobar")); err != nil {
 		t.Error(err)
 	}
-	f.Close()
+	if err := f.Close(); err != nil {
+		t.Error(err)
+	}
 
 	actual := b.String()
 	expected := "foobar    "
@@ -139,6 +150,65 @@ func TestWriter_pad(t *testing.T) {
 	expected := "...."
 	if actual != expected {
 		t.Errorf("expected:\n\n`%s`\n\nActual Output:\n\n`%s`", expected, actual)
+	}
+
+	f.closed = true
+
+	if err := f.pad(); err != ErrClosed {
+		t.Error(err)
+	}
+}
+
+func TestWriter_Flush(t *testing.T) {
+	t.Parallel()
+
+	f := NewWriter(6, nil)
+
+	_, err := f.Write([]byte("foo"))
+	if err != nil {
+		t.Error(err)
+	}
+
+	if err := f.Flush(); err != nil {
+		t.Error(err)
+	}
+
+	exp := "foo   "
+	if f.String() != exp {
+		t.Errorf("expected:\n\n`%s`\n\nActual Output:\n\n`%s`", exp, f.String())
+	}
+
+	_, err = f.Write([]byte("bar"))
+	if err != nil {
+		t.Error(err)
+	}
+	if err := f.Flush(); err != nil {
+		t.Error(err)
+	}
+
+	exp = "bar   "
+	if f.String() != exp {
+		t.Errorf("expected:\n\n`%s`\n\nActual Output:\n\n`%s`", exp, f.String())
+	}
+}
+
+func TestWriter_Close(t *testing.T) {
+	t.Parallel()
+
+	f := &Writer{
+		Padding:    6,
+		lineLen:    1,
+		ansiWriter: &ansi.Writer{Forward: fakeWriter{}},
+	}
+
+	if err := f.Close(); err != fakeErr {
+		t.Error(err)
+	}
+
+	f.closed = true
+
+	if err := f.Close(); err != ErrClosed {
+		t.Error(err)
 	}
 }
 

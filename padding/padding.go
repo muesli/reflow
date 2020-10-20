@@ -2,13 +2,16 @@ package padding
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"strings"
 
 	"github.com/mattn/go-runewidth"
-
 	"github.com/muesli/reflow/ansi"
 )
+
+// ErrClosed indicates an error when closing a closed writer
+var ErrClosed = errors.New("padding: close a closed writer")
 
 type PaddingFunc func(w io.Writer)
 
@@ -18,8 +21,10 @@ type Writer struct {
 
 	ansiWriter *ansi.Writer
 	buf        bytes.Buffer
+	cache      bytes.Buffer
 	lineLen    int
 	ansi       bool
+	closed     bool
 }
 
 func NewWriter(width uint, paddingFunc PaddingFunc) *Writer {
@@ -48,7 +53,7 @@ func NewWriterPipe(forward io.Writer, width uint, paddingFunc PaddingFunc) *Writ
 func Bytes(b []byte, width uint) []byte {
 	f := NewWriter(width, nil)
 	_, _ = f.Write(b)
-	f.Close()
+	_ = f.Flush()
 
 	return f.Bytes()
 }
@@ -61,6 +66,9 @@ func String(s string, width uint) string {
 
 // Write is used to write content to the padding buffer.
 func (w *Writer) Write(b []byte) (int, error) {
+	if w.closed {
+		return 0, ErrClosed
+	}
 	for _, c := range string(b) {
 		if c == '\x1B' {
 			// ANSI escape sequence
@@ -94,6 +102,10 @@ func (w *Writer) Write(b []byte) (int, error) {
 }
 
 func (w *Writer) pad() error {
+	if w.closed {
+		return ErrClosed
+	}
+
 	if w.Padding > 0 && uint(w.lineLen) < w.Padding {
 		if w.PadFunc != nil {
 			for i := 0; i < int(w.Padding)-w.lineLen; i++ {
@@ -110,23 +122,45 @@ func (w *Writer) pad() error {
 	return nil
 }
 
-// Close will finish the padding operation. Always call it before trying to
-// retrieve the final result.
-func (w *Writer) Close() error {
-	// don't pad empty trailing lines
-	if w.lineLen == 0 {
-		return nil
+// Close will finish the padding operation and then closes the writer.
+// Notice that the writer will never be wrote again after it closed.
+func (w *Writer) Close() (err error) {
+	if w.closed {
+		return ErrClosed
 	}
 
-	return w.pad()
+	if err = w.Flush(); err != nil {
+		return
+	}
+
+	w.closed = true
+
+	return
 }
 
 // Bytes returns the padded result as a byte slice.
 func (w *Writer) Bytes() []byte {
-	return w.buf.Bytes()
+	return w.cache.Bytes()
 }
 
 // String returns the padded result as a string.
 func (w *Writer) String() string {
-	return w.buf.String()
+	return w.cache.String()
+}
+
+// Flush will finish the padding operation. Always call it before trying to
+// retrieve the final result.
+func (w *Writer) Flush() (err error) {
+	if w.lineLen != 0 {
+		if err = w.pad(); err != nil {
+			return
+		}
+	}
+
+	w.cache.Reset()
+	_, err = w.buf.WriteTo(&w.cache)
+	w.lineLen = 0
+	w.ansi = false
+
+	return
 }
