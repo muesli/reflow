@@ -96,20 +96,13 @@ func TestPaddingString(t *testing.T) {
 }
 
 func BenchmarkPaddingString(b *testing.B) {
-	var actual string
-	expected := "foobar    "
-
-	b.ReportAllocs()
-	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
+		b.ReportAllocs()
+		b.ResetTimer()
 		for pb.Next() {
-			actual = String("foobar", 10)
+			String("foobar", 10)
 		}
 	})
-
-	if actual != expected {
-		b.Errorf("expected:\n\n`%s`\n\nActual Output:\n\n`%s`", expected, actual)
-	}
 }
 
 func TestNewWriterPipe(t *testing.T) {
