@@ -42,3 +42,15 @@ func TestDedent(t *testing.T) {
 		}
 	}
 }
+
+// go test -bench=BenchmarkDedent -benchmem -count=4
+func BenchmarkDedent(b *testing.B) {
+	b.RunParallel(func(pb *testing.PB) {
+		input := "  line 1\n\n  line 2\n line 3"
+		b.ReportAllocs()
+		b.ResetTimer()
+		for pb.Next() {
+			String(input)
+		}
+	})
+}
