@@ -42,3 +42,22 @@ func TestDedent(t *testing.T) {
 		}
 	}
 }
+
+// go test -bench=BenchmarkDedent -benchmem -count=4
+func BenchmarkDedent(b *testing.B) {
+	var actual string
+	input := "  line 1\n\n  line 2\n line 3"
+	expected := " line 1\n\n line 2\nline 3"
+
+	b.RunParallel(func(pb *testing.PB) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		for pb.Next() {
+			actual = String(input)
+		}
+	})
+
+	if actual != expected {
+		b.Errorf("expected:\n\n`%s`\n\nActual Output:\n\n`%s`", expected, actual)
+	}
+}
