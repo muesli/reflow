@@ -61,27 +61,11 @@ func TestWriter_Write_Error(t *testing.T) {
 func BenchmarkWriter_Write(b *testing.B) {
 	buf := []byte("\x1B[38;2;249;38;114m你好reflow\x1B[0m")
 	w := &Writer{Forward: ioutil.Discard}
-	var (
-		n   int
-		err error
-	)
 
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		n, err = w.Write(buf)
-	}
-
-	if err != nil {
-		b.Fatalf("err should be nil, but got %v", err)
-	}
-
-	if l := len(buf); n != l {
-		b.Fatalf("n should be %d, got %d", l, n)
-	}
-
-	if ls := w.LastSequence(); ls != "" {
-		b.Fatalf("LastSequence should be empty, got %s", ls)
+		_, _ = w.Write(buf)
 	}
 }
 
