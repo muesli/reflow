@@ -23,7 +23,7 @@ func minIndent(s string) int {
 	)
 	for i := 0; i < len(s); i++ {
 		switch s[i] {
-		case ' ':
+		case ' ', '\t':
 			if shouldAppend {
 				curIndent++
 			}
@@ -51,7 +51,7 @@ func dedent(s string, indent int) string {
 
 	for i := 0; i < len(s); i++ {
 		switch s[i] {
-		case ' ':
+		case ' ', '\t':
 			if shouldOmit {
 				if omitted < indent {
 					omitted++

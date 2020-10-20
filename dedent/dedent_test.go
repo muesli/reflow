@@ -26,6 +26,14 @@ func TestDedent(t *testing.T) {
 			Expected: "line 1\nline 2\nline 3\n\n",
 		},
 		{
+			Input:    " \tline 1\n\t\tline 2\n\t line 3\n\n",
+			Expected: "line 1\nline 2\nline 3\n\n",
+		},
+		{
+			Input:    "\t\tline 1\n\n\t\tline 2\n\tline 3",
+			Expected: "\tline 1\n\n\tline 2\nline 3",
+		},
+		{
 			Input:    "\n\n\n\n\n\n",
 			Expected: "\n\n\n\n\n\n",
 		},
