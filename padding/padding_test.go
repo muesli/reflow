@@ -100,6 +100,7 @@ func TestPaddingString(t *testing.T) {
 	}
 }
 
+// go test -bench=BenchmarkPaddingString -benchmem -count=4
 func BenchmarkPaddingString(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		b.ReportAllocs()
