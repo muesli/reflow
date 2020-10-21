@@ -2,6 +2,7 @@ package ansi
 
 import (
 	"bytes"
+	"unsafe"
 
 	"github.com/mattn/go-runewidth"
 )
@@ -13,7 +14,7 @@ type Buffer struct {
 
 // PrintableRuneWidth returns the width of all printable runes in the buffer.
 func (w Buffer) PrintableRuneWidth() int {
-	return PrintableRuneWidth(w.String())
+	return PrintableRuneWidth(b2s(w.Bytes()))
 }
 
 func PrintableRuneWidth(s string) int {
@@ -35,4 +36,14 @@ func PrintableRuneWidth(s string) int {
 	}
 
 	return n
+}
+
+// b2s converts byte slice to a string without memory allocation.
+// See https://groups.google.com/forum/#!msg/Golang-Nuts/ENgbUzYvCuU/90yGx7GUAgAJ .
+//
+// Note it may break if string and/or slice header will change
+// in the future go versions.
+func b2s(b []byte) string {
+	/* #nosec G103 */
+	return *(*string)(unsafe.Pointer(&b))
 }
