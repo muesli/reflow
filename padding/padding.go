@@ -123,7 +123,7 @@ func (w *Writer) pad() error {
 }
 
 // Close will finish the padding operation and then closes the writer.
-// Notice that the writer will never be wrote again after it closed.
+// Notice that the writer can never be written to again once it has been closed.
 func (w *Writer) Close() (err error) {
 	if w.closed {
 		return ErrClosed
