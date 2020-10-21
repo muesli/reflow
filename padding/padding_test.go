@@ -88,10 +88,6 @@ func TestPaddingWriter(t *testing.T) {
 	if f.String() != exp {
 		t.Errorf("expected:\n\n`%s`\n\nActual Output:\n\n`%s`", exp, f.String())
 	}
-
-	if _, err := f.Write([]byte("bar")); err != ErrClosed {
-		t.Error(err)
-	}
 }
 
 func TestPaddingString(t *testing.T) {
@@ -151,12 +147,6 @@ func TestWriter_pad(t *testing.T) {
 	if actual != expected {
 		t.Errorf("expected:\n\n`%s`\n\nActual Output:\n\n`%s`", expected, actual)
 	}
-
-	f.closed = true
-
-	if err := f.pad(); err != ErrClosed {
-		t.Error(err)
-	}
 }
 
 func TestWriter_Flush(t *testing.T) {
@@ -202,12 +192,6 @@ func TestWriter_Close(t *testing.T) {
 	}
 
 	if err := f.Close(); err != fakeErr {
-		t.Error(err)
-	}
-
-	f.closed = true
-
-	if err := f.Close(); err != ErrClosed {
 		t.Error(err)
 	}
 }
