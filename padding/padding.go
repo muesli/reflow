@@ -11,7 +11,7 @@ import (
 )
 
 // ErrClosed indicates an error when closing a closed writer
-var ErrClosed = errors.New("padding: close a closed writer")
+var ErrClosed = errors.New("padding: the writer is closed")
 
 type PaddingFunc func(w io.Writer)
 
