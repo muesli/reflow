@@ -29,3 +29,26 @@ func Benchmark_PrintableRuneWidth(b *testing.B) {
 		}
 	})
 }
+
+func Test_Truncate(t *testing.T) {
+	t.Parallel()
+
+	var s string = "\x1B[38;2;249;38;114m你好"
+
+	if n := PrintableRuneWidth(Truncate(s, 2, "")); n != 2 {
+		t.Fatalf("width should be 2, got %d", n)
+	}
+}
+
+// go test -bench=Benchmark_Truncate -benchmem -count=4
+func Benchmark_Truncate(b *testing.B) {
+	s := "\x1B[38;2;249;38;114m你好"
+
+	b.RunParallel(func(pb *testing.PB) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		for pb.Next() {
+			Truncate(s, 2, "")
+		}
+	})
+}
