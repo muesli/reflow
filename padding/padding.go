@@ -21,12 +21,14 @@ type Writer struct {
 	cache      bytes.Buffer
 	lineLen    int
 	ansi       bool
+	runeBuf    []byte
 }
 
 func NewWriter(width uint, paddingFunc PaddingFunc) *Writer {
 	w := &Writer{
 		Padding: width,
 		PadFunc: paddingFunc,
+		runeBuf: make([]byte, utf8.UTFMax),
 	}
 	w.ansiWriter = &ansi.Writer{
 		Forward: &w.buf,
@@ -38,6 +40,7 @@ func NewWriterPipe(forward io.Writer, width uint, paddingFunc PaddingFunc) *Writ
 	return &Writer{
 		Padding: width,
 		PadFunc: paddingFunc,
+		runeBuf: make([]byte, utf8.UTFMax),
 		ansiWriter: &ansi.Writer{
 			Forward: forward,
 		},
@@ -117,9 +120,8 @@ func (w *Writer) pad() error {
 }
 
 func (w *Writer) writeRune(r rune) (int, error) {
-	bb := make([]byte, utf8.UTFMax)
-	n := utf8.EncodeRune(bb, r)
-	return w.ansiWriter.Write(bb[:n])
+	n := utf8.EncodeRune(w.runeBuf, r)
+	return w.ansiWriter.Write(w.runeBuf[:n])
 }
 
 // Close will finish the padding operation.
@@ -156,7 +158,7 @@ func (w *Writer) Flush() (err error) {
 
 var wp = sync.Pool{
 	New: func() interface{} {
-		w := &Writer{}
+		w := &Writer{runeBuf: make([]byte, utf8.UTFMax)}
 		w.ansiWriter = &ansi.Writer{
 			Forward: &w.buf,
 		}

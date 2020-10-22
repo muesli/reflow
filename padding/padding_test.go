@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/muesli/reflow/ansi"
 )
@@ -202,6 +203,7 @@ func TestWriter_Error(t *testing.T) {
 
 	f := &Writer{
 		Padding:    6,
+		runeBuf:    make([]byte, utf8.UTFMax),
 		ansiWriter: &ansi.Writer{Forward: fakeWriter{}},
 	}
 
