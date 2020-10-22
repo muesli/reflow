@@ -33,6 +33,10 @@ func PrintableRuneWidth(s string) int {
 // Truncate truncates a given string at the given printable cell width, leaving
 // any ansi sequences intact.
 func Truncate(s string, w int, tail string) string {
+	if PrintableRuneWidth(s) <= w {
+		return s
+	}
+
 	var n int
 	var ansi bool
 	var acc strings.Builder
