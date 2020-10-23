@@ -32,7 +32,14 @@ func PrintableRuneWidth(s string) int {
 
 // Truncate truncates a given string at the given printable cell width, leaving
 // any ansi sequences intact.
-func Truncate(s string, w int, tail string) string {
+func Truncate(s string, w int) string {
+	return TruncateWithTail(s, w, "")
+}
+
+// TruncateWithTail truncates a given string at the given printable cell width,
+// leaving any ansi sequences intact. A tail is then added to the end of the
+// string.
+func TruncateWithTail(s string, w int, tail string) string {
 	if PrintableRuneWidth(s) <= w {
 		return s
 	}
