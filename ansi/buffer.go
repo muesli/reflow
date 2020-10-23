@@ -50,7 +50,10 @@ func Truncate(s string, w int, tail string) string {
 		_, _ = acc.WriteRune(c)
 	}
 
-	_, _ = acc.WriteString("\x1B[0m") // terminate any open ANSI sequences
+	if ansi {
+		// terminate any open ANSI sequences
+		_, _ = acc.WriteString("\x1B[0m")
+	}
 	_, _ = acc.WriteString(tail)
 	return acc.String()
 }
