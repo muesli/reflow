@@ -3,6 +3,7 @@ package ansi
 import (
 	"bytes"
 	"io"
+	"unicode/utf8"
 )
 
 type Writer struct {
@@ -12,18 +13,19 @@ type Writer struct {
 	ansiseq    bytes.Buffer
 	lastseq    bytes.Buffer
 	seqchanged bool
+	runeBuf    []byte
 }
 
 // Write is used to write content to the ANSI buffer.
 func (w *Writer) Write(b []byte) (int, error) {
-	for i, c := range b {
+	for _, c := range string(b) {
 		if c == '\x1B' {
 			// ANSI escape sequence
 			w.ansi = true
 			w.seqchanged = true
-			_ = w.ansiseq.WriteByte(c)
+			w.ansiseq.WriteRune(c)
 		} else if w.ansi {
-			_ = w.ansiseq.WriteByte(c)
+			w.ansiseq.WriteRune(c)
 			if (c >= 0x41 && c <= 0x5a) || (c >= 0x61 && c <= 0x7a) {
 				// ANSI sequence terminated
 				w.ansi = false
@@ -40,7 +42,7 @@ func (w *Writer) Write(b []byte) (int, error) {
 				_, _ = w.ansiseq.WriteTo(w.Forward)
 			}
 		} else {
-			_, err := w.Forward.Write(b[i : i+1])
+			_, err := w.writeRune(c)
 			if err != nil {
 				return 0, err
 			}
@@ -48,6 +50,14 @@ func (w *Writer) Write(b []byte) (int, error) {
 	}
 
 	return len(b), nil
+}
+
+func (w *Writer) writeRune(r rune) (int, error) {
+	if w.runeBuf == nil {
+		w.runeBuf = make([]byte, utf8.UTFMax)
+	}
+	n := utf8.EncodeRune(w.runeBuf, r)
+	return w.Forward.Write(w.runeBuf[:n])
 }
 
 func (w *Writer) LastSequence() string {
