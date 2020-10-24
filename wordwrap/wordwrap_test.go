@@ -153,3 +153,15 @@ func TestWordWrapString(t *testing.T) {
 		t.Errorf("expected:\n\n`%s`\n\nActual Output:\n\n`%s`", expected, actual)
 	}
 }
+
+// go test -bench=BenchmarkWordWrapString -benchmem -count=4
+func BenchmarkWordWrapString(b *testing.B) {
+	s := "\x1B[38;2;249;38;114m(\x1B[0m\x1B[38;2;248;248;242mjust 另一个 test\x1B[38;2;249;38;114m)\x1B[0m"
+	b.RunParallel(func(pb *testing.PB) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		for pb.Next() {
+			String(s, 7)
+		}
+	})
+}

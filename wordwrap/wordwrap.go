@@ -2,8 +2,11 @@ package wordwrap
 
 import (
 	"bytes"
+	"reflect"
 	"strings"
+	"sync"
 	"unicode"
+	"unsafe"
 
 	"github.com/muesli/reflow/ansi"
 )
@@ -44,17 +47,19 @@ func NewWriter(limit int) *WordWrap {
 // Bytes is shorthand for declaring a new default WordWrap instance,
 // used to immediately word-wrap a byte slice.
 func Bytes(b []byte, limit int) []byte {
-	f := NewWriter(limit)
+	f := acquireWordWrap(limit)
+	defer wp.Put(f)
 	_, _ = f.Write(b)
-	f.Close()
 
-	return f.Bytes()
+	f.addWord()
+
+	return f.buf.Bytes()
 }
 
 // String is shorthand for declaring a new default WordWrap instance,
 // used to immediately word-wrap a string.
 func String(s string, limit int) string {
-	return string(Bytes([]byte(s), limit))
+	return b2s(Bytes(s2b(s), limit))
 }
 
 func (w *WordWrap) addSpace() {
@@ -73,7 +78,7 @@ func (w *WordWrap) addWord() {
 }
 
 func (w *WordWrap) addNewLine() {
-	w.buf.WriteRune('\n')
+	w.buf.WriteByte('\n')
 	w.lineLen = 0
 	w.space.Reset()
 }
@@ -93,7 +98,7 @@ func (w *WordWrap) Write(b []byte) (int, error) {
 		return w.buf.Write(b)
 	}
 
-	s := string(b)
+	s := b2s(b)
 	if !w.KeepNewlines {
 		s = strings.Replace(strings.TrimSpace(s), "\n", " ", -1)
 	}
@@ -139,8 +144,8 @@ func (w *WordWrap) Write(b []byte) (int, error) {
 
 			// add a line break if the current word would exceed the line's
 			// character limit
-			if w.lineLen+w.space.Len()+w.word.PrintableRuneWidth() > w.Limit &&
-				w.word.PrintableRuneWidth() < w.Limit {
+			if wordWidth := w.word.PrintableRuneWidth(); w.lineLen+w.space.Len()+wordWidth > w.Limit &&
+				wordWidth < w.Limit {
 				w.addNewLine()
 			}
 		}
@@ -164,4 +169,49 @@ func (w *WordWrap) Bytes() []byte {
 // String returns the word-wrapped result as a string.
 func (w *WordWrap) String() string {
 	return w.buf.String()
+}
+
+var wp = sync.Pool{
+	New: func() interface{} {
+		return &WordWrap{
+			Breakpoints:  defaultBreakpoints,
+			Newline:      defaultNewline,
+			KeepNewlines: true,
+		}
+	},
+}
+
+func acquireWordWrap(limit int) *WordWrap {
+	w := wp.Get().(*WordWrap)
+	w.Limit = limit
+	w.buf.Reset()
+	w.lineLen = 0
+	w.ansi = false
+
+	return w
+}
+
+// b2s converts byte slice to a string without memory allocation.
+// See https://groups.google.com/forum/#!msg/Golang-Nuts/ENgbUzYvCuU/90yGx7GUAgAJ .
+//
+// Note it may break if string and/or slice header will change
+// in the future go versions.
+func b2s(b []byte) string {
+	/* #nosec G103 */
+	return *(*string)(unsafe.Pointer(&b))
+}
+
+// s2b converts string to a byte slice without memory allocation.
+//
+// Note it may break if string and/or slice header will change
+// in the future go versions.
+func s2b(s string) (b []byte) {
+	/* #nosec G103 */
+	bh := (*reflect.SliceHeader)(unsafe.Pointer(&b))
+	/* #nosec G103 */
+	sh := *(*reflect.StringHeader)(unsafe.Pointer(&s))
+	bh.Data = sh.Data
+	bh.Len = sh.Len
+	bh.Cap = sh.Len
+	return b
 }
