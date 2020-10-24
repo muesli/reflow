@@ -23,9 +23,9 @@ func (w *Writer) Write(b []byte) (int, error) {
 			// ANSI escape sequence
 			w.ansi = true
 			w.seqchanged = true
-			w.ansiseq.WriteRune(c)
+			_, _ = w.ansiseq.WriteRune(c)
 		} else if w.ansi {
-			w.ansiseq.WriteRune(c)
+			_, _ = w.ansiseq.WriteRune(c)
 			if (c >= 0x41 && c <= 0x5a) || (c >= 0x61 && c <= 0x7a) {
 				// ANSI sequence terminated
 				w.ansi = false
