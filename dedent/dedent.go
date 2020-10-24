@@ -59,13 +59,13 @@ func dedent(s string, indent int) string {
 				}
 				shouldOmit = false
 			}
-			buf.WriteByte(s[i])
+			_ = buf.WriteByte(s[i])
 		case '\n':
 			omitted = 0
 			shouldOmit = true
-			buf.WriteByte(s[i])
+			_ = buf.WriteByte(s[i])
 		default:
-			buf.WriteByte(s[i])
+			_ = buf.WriteByte(s[i])
 		}
 	}
 
