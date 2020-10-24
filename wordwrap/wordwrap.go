@@ -144,8 +144,8 @@ func (w *WordWrap) Write(b []byte) (int, error) {
 
 			// add a line break if the current word would exceed the line's
 			// character limit
-			if w.lineLen+w.space.Len()+w.word.PrintableRuneWidth() > w.Limit &&
-				w.word.PrintableRuneWidth() < w.Limit {
+			if wordWidth := w.word.PrintableRuneWidth(); w.lineLen+w.space.Len()+wordWidth > w.Limit &&
+				wordWidth < w.Limit {
 				w.addNewLine()
 			}
 		}
