@@ -33,10 +33,15 @@ func Benchmark_PrintableRuneWidth(b *testing.B) {
 func Test_Truncate(t *testing.T) {
 	t.Parallel()
 
-	s := "\x1B[38;2;249;38;114m你\x1B[7m好\x1B[0m"
+	in := "\x1B[38;2;249;38;114m你\x1B[7m好\x1B[0m"
+	out := "\x1B[38;2;249;38;114m你\x1B[7m\x1B[0m"
+	res := Truncate(in, 2)
 
-	if n := PrintableRuneWidth(Truncate(s, 2, "")); n != 2 {
+	if n := PrintableRuneWidth(res); n != 2 {
 		t.Fatalf("width should be 2, got %d", n)
+	}
+	if res != out {
+		t.Fatalf("expected %s got %s\x1B[0m", out, res)
 	}
 }
 
@@ -48,7 +53,7 @@ func Benchmark_Truncate(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for pb.Next() {
-			Truncate(s, 2, "")
+			Truncate(s, 2)
 		}
 	})
 }

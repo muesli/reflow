@@ -2,7 +2,6 @@ package ansi
 
 import (
 	"bytes"
-	"strings"
 
 	"github.com/mattn/go-runewidth"
 )
@@ -44,25 +43,31 @@ func TruncateWithTail(s string, w int, tail string) string {
 		return s
 	}
 
-	var n int
-	var ansi bool
-	var acc strings.Builder
+	const ansiReset = "\x1B[0m"
 
-	for _, c := range s {
-		accPrintableRuneWidth(c, &n, &ansi)
+	if tail != "" {
+		tail += ansiReset
+	}
+
+	tw := PrintableRuneWidth(tail)
+	w -= tw
+	if w < 0 {
+		return tail
+	}
+
+	r := []rune(s)
+	ansi := false
+	n := 0
+	i := 0
+
+	for ; i < len(r); i++ {
+		accPrintableRuneWidth(r[i], &n, &ansi)
 		if n > w {
 			break
 		}
-
-		_, _ = acc.WriteRune(c)
 	}
 
-	if ansi {
-		// terminate any open ANSI sequences
-		_, _ = acc.WriteString("\x1B[0m")
-	}
-	_, _ = acc.WriteString(tail)
-	return acc.String()
+	return string(r[0:i]) + ansiReset + tail
 }
 
 // Used to accumulate the printable rune width while tracking whether we're in
