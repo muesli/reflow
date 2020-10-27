@@ -66,8 +66,7 @@ func Test_Truncate(t *testing.T) {
 		},
 	}
 
-	i := 0
-	for _, tt := range tests {
+	for i, tt := range tests {
 		t.Run(fmt.Sprintf("truncate-%d", i), func(t *testing.T) {
 			t.Parallel()
 			res := Truncate(tt.in, tt.width)
@@ -78,7 +77,6 @@ func Test_Truncate(t *testing.T) {
 				t.Fatalf("expected '%s' got '%s'\x1B[0m", tt.out, res)
 			}
 		})
-		i++
 	}
 }
 
