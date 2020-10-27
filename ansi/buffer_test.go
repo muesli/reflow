@@ -2,6 +2,7 @@ package ansi
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 )
 
@@ -33,15 +34,51 @@ func Benchmark_PrintableRuneWidth(b *testing.B) {
 func Test_Truncate(t *testing.T) {
 	t.Parallel()
 
-	in := "\x1B[38;2;249;38;114m你\x1B[7m好\x1B[0m"
-	out := "\x1B[38;2;249;38;114m你\x1B[7m\x1B[0m"
-	res := Truncate(in, 2)
-
-	if n := PrintableRuneWidth(res); n != 2 {
-		t.Fatalf("width should be 2, got %d", n)
+	tests := []struct {
+		in            string
+		out           string
+		width         int
+		expectedWidth int
+	}{
+		{
+			"\x1B[38;2;249;38;114m你\x1B[7m好\x1B[0m",
+			"\x1B[38;2;249;38;114m你\x1B[7m\x1B[0m",
+			2,
+			2,
+		},
+		{
+			"\x1B[38;2;249;38;114m你\x1B[7m好\x1B[0m",
+			"\x1B[38;2;249;38;114m\x1B[0m",
+			1,
+			0,
+		},
+		{
+			"It’s me!",
+			"It’s me!",
+			10,
+			8,
+		},
+		{
+			"It’s \x1B[7mme!",
+			"It’s \x1B[7m\x1B[0m",
+			5,
+			5,
+		},
 	}
-	if res != out {
-		t.Fatalf("expected %s got %s\x1B[0m", out, res)
+
+	i := 0
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("truncate-%d", i), func(t *testing.T) {
+			t.Parallel()
+			res := Truncate(tt.in, tt.width)
+			if n := PrintableRuneWidth(res); n != tt.expectedWidth {
+				t.Fatalf("width should be %d, got %d", tt.expectedWidth, n)
+			}
+			if res != tt.out {
+				t.Fatalf("expected '%s' got '%s'\x1B[0m", tt.out, res)
+			}
+		})
+		i++
 	}
 }
 
