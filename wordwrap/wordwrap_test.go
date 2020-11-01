@@ -121,10 +121,10 @@ func TestWordWrap(t *testing.T) {
 			7,
 			true,
 		},
-		// ANSI control codes don't get wrapped:
+		// ANSI control codes don't get wrapped, but get finished and again started at each line break:
 		{
 			"\x1B[38;2;249;38;114m(\x1B[0m\x1B[38;2;248;248;242mjust another test\x1B[38;2;249;38;114m)\x1B[0m",
-			"\x1B[38;2;249;38;114m(\x1B[0m\x1B[38;2;248;248;242mjust\nanother\ntest\x1B[38;2;249;38;114m)\x1B[0m",
+			"\x1B[38;2;249;38;114m(\x1B[0m\x1B[38;2;248;248;242mjust\x1B[0m\n\x1B[38;2;248;248;242manother\x1B[0m\x1B[0m\n\x1B[38;2;248;248;242mtest\x1B[38;2;249;38;114m)\x1B[0m",
 			3,
 			true,
 		},
