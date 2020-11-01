@@ -5,6 +5,7 @@ import (
 	"strings"
 	"unicode"
 
+	runewidth "github.com/mattn/go-runewidth"
 	"github.com/muesli/reflow/ansi"
 )
 
@@ -21,13 +22,17 @@ type WordWrap struct {
 	Breakpoints  []rune
 	Newline      []rune
 	KeepNewlines bool
+	HardBreak    bool
 
-	buf   bytes.Buffer
-	space bytes.Buffer
-	word  ansi.Buffer
+	buf   bytes.Buffer // processed and in line accepted bytes
+	space bytes.Buffer // pending continues spaces bytes
+	word  ansi.Buffer  // pending continues word bytes
 
-	lineLen int
-	ansi    bool
+	hardWriter ansi.Writer
+
+	lineLen  int
+	ansi     bool
+	lastAnsi bytes.Buffer
 }
 
 // NewWriter returns a new instance of a word-wrapping writer, initialized with
@@ -57,6 +62,7 @@ func String(s string, limit int) string {
 	return string(Bytes([]byte(s), limit))
 }
 
+// addes pending spaces to the buf(fer) ... and resets the space buffer
 func (w *WordWrap) addSpace() {
 	w.lineLen += w.space.Len()
 	_, _ = w.buf.Write(w.space.Bytes())
@@ -73,7 +79,11 @@ func (w *WordWrap) addWord() {
 }
 
 func (w *WordWrap) addNewLine() {
-	_, _ = w.buf.WriteRune('\n')
+	if w.lastAnsi.Len() != 0 {
+		// end ansi befor linebreak
+		w.buf.WriteString("\x1b[0m")
+	}
+	w.buf.WriteRune('\n')
 	w.lineLen = 0
 	w.space.Reset()
 }
@@ -99,15 +109,25 @@ func (w *WordWrap) Write(b []byte) (int, error) {
 	}
 
 	for _, c := range s {
+		// Restart Ansi after line break if there is more text
+		if w.lineLen == 0 && w.buf.Len() == 0 && w.lastAnsi.Len() != 0 {
+			w.buf.Write(w.lastAnsi.Bytes())
+			w.addWord()
+		}
 		if c == '\x1B' {
 			// ANSI escape sequence
-			_, _ = w.word.WriteRune(c)
+			w.word.WriteRune(c)
+			w.lastAnsi.WriteRune(c)
 			w.ansi = true
 		} else if w.ansi {
-			_, _ = w.word.WriteRune(c)
+			w.word.WriteRune(c)
+			w.lastAnsi.WriteRune(c)
 			if (c >= 0x40 && c <= 0x5a) || (c >= 0x61 && c <= 0x7a) {
 				// ANSI sequence terminated
 				w.ansi = false
+			}
+			if w.lastAnsi.String() == "\x1b[0m" {
+				w.lastAnsi.Reset()
 			}
 		} else if inGroup(w.Newline, c) {
 			// end of current line
@@ -132,7 +152,12 @@ func (w *WordWrap) Write(b []byte) (int, error) {
 			// valid breakpoint
 			w.addSpace()
 			w.addWord()
-			_, _ = w.buf.WriteRune(c)
+			w.buf.WriteRune(c)
+		} else if w.HardBreak && w.lineLen+runewidth.RuneWidth(c) > w.Limit {
+			// Word excends the limite -> break and begin new line/word
+			w.addWord()
+			w.addNewLine()
+			w.buf.WriteRune(c)
 		} else {
 			// any other character
 			_, _ = w.word.WriteRune(c)
@@ -157,11 +182,13 @@ func (w *WordWrap) Close() error {
 }
 
 // Bytes returns the word-wrapped result as a byte slice.
+// Make sure to have closed the worwrapper, befor calling it
 func (w *WordWrap) Bytes() []byte {
 	return w.buf.Bytes()
 }
 
 // String returns the word-wrapped result as a string.
+// Make sure to have closed the worwrapper, befor calling it
 func (w *WordWrap) String() string {
 	return w.buf.String()
 }
