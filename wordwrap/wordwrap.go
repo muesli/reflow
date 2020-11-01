@@ -30,9 +30,10 @@ type WordWrap struct {
 
 	hardWriter ansi.Writer
 
-	lineLen  int
-	ansi     bool
-	lastAnsi bytes.Buffer
+	wroteBegin bool
+	lineLen    int
+	ansi       bool
+	lastAnsi   bytes.Buffer
 }
 
 // NewWriter returns a new instance of a word-wrapping writer, initialized with
@@ -86,6 +87,7 @@ func (w *WordWrap) addNewLine() {
 	w.buf.WriteRune('\n')
 	w.lineLen = 0
 	w.space.Reset()
+	w.wroteBegin = false
 }
 
 func inGroup(a []rune, c rune) bool {
@@ -110,10 +112,11 @@ func (w *WordWrap) Write(b []byte) (int, error) {
 
 	for _, c := range s {
 		// Restart Ansi after line break if there is more text
-		if w.lineLen == 0 && w.buf.Len() == 0 && w.lastAnsi.Len() != 0 {
+		if !w.wroteBegin && !w.ansi && w.lastAnsi.Len() != 0 {
 			w.buf.Write(w.lastAnsi.Bytes())
 			w.addWord()
 		}
+		w.wroteBegin = true
 		if c == '\x1B' {
 			// ANSI escape sequence
 			w.word.WriteRune(c)
@@ -126,7 +129,7 @@ func (w *WordWrap) Write(b []byte) (int, error) {
 				// ANSI sequence terminated
 				w.ansi = false
 			}
-			if w.lastAnsi.String() == "\x1b[0m" {
+			if c == 'm' && strings.HasSuffix(w.lastAnsi.String(), "\x1b[0m") {
 				w.lastAnsi.Reset()
 			}
 		} else if inGroup(w.Newline, c) {
