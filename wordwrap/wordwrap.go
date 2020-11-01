@@ -18,22 +18,23 @@ var (
 // support for ANSI escape sequences. This means you can style your terminal
 // output without affecting the word wrapping algorithm.
 type WordWrap struct {
-	Limit        int
-	Breakpoints  []rune
-	Newline      []rune
-	KeepNewlines bool
-	HardBreak    bool
+	Limit          int
+	Breakpoints    []rune
+	Newline        []rune
+	KeepNewlines   bool
+	HardWrap       bool
+	TabReplace     string // since tabs can have differrent lenghts, replace them with this when hardwrap is enabled
+	PreserveSpaces bool
 
-	buf   bytes.Buffer // processed and in line accepted bytes
+	buf   bytes.Buffer // processed and, in line, accepted bytes
 	space bytes.Buffer // pending continues spaces bytes
 	word  ansi.Buffer  // pending continues word bytes
 
-	hardWriter ansi.Writer
+	lineLen int // the visible lenght of the line not accorat for tabs
+	ansi    bool
 
-	wroteBegin bool
-	lineLen    int
-	ansi       bool
-	lastAnsi   bytes.Buffer
+	wroteBegin bool         // mark is since the last newline something has writen to the buffer (for ansi restart)
+	lastAnsi   bytes.Buffer // hold last active ansi sequence
 }
 
 // NewWriter returns a new instance of a word-wrapping writer, initialized with
@@ -63,10 +64,45 @@ func String(s string, limit int) string {
 	return string(Bytes([]byte(s), limit))
 }
 
+// HardWrap is a shorthand for declaring a new hardwraping WordWrap instance,
+// since varibale lenght characters can not be hard wraped to a fixed lenght,
+// tabs will be replaced by TabReplace, use according amount of spaces.
+func HardWrap(s string, limit int, tabReplace string) string {
+	f := NewWriter(limit)
+	f.HardWrap = true
+	f.TabReplace = tabReplace
+	_, _ = f.Write([]byte(s))
+	f.Close()
+
+	return f.String()
+}
+
 // addes pending spaces to the buf(fer) ... and resets the space buffer
 func (w *WordWrap) addSpace() {
-	w.lineLen += w.space.Len()
-	_, _ = w.buf.Write(w.space.Bytes())
+	// the line and the pending spaces are less than the limit
+	if w.lineLen+w.space.Len() <= w.Limit {
+		w.lineLen += w.space.Len()
+		_, _ = w.buf.Write(w.space.Bytes())
+
+		// the existing line and the pending spaces would overflow the limit
+	} else {
+		// fill up the rest of the line with spaces
+		length := w.space.Len()
+		rest := w.Limit - w.lineLen
+		_, _ = w.buf.WriteString(strings.Repeat(" ", rest))
+		length -= rest
+
+		// when the amount of spaces is longer than a hole line limit, write the spaces into multiple lines.
+		for length >= w.Limit {
+			_, _ = w.buf.WriteString("\n" + strings.Repeat(" ", w.Limit))
+			length -= w.Limit
+		}
+		// write the remanding spaces which are less than the limit
+		if length > 0 {
+			_, _ = w.buf.WriteString("\n" + strings.Repeat(" ", length))
+		}
+		w.lineLen = length
+	}
 	w.space.Reset()
 }
 
@@ -80,6 +116,9 @@ func (w *WordWrap) addWord() {
 }
 
 func (w *WordWrap) addNewLine() {
+	if w.PreserveSpaces {
+		w.addSpace()
+	}
 	if w.lastAnsi.Len() != 0 {
 		// end ansi befor linebreak
 		w.buf.WriteString("\x1b[0m")
@@ -108,6 +147,10 @@ func (w *WordWrap) Write(b []byte) (int, error) {
 	s := string(b)
 	if !w.KeepNewlines {
 		s = strings.Replace(strings.TrimSpace(s), "\n", " ", -1)
+	}
+
+	if w.HardWrap {
+		s = strings.Replace(s, "\t", w.TabReplace, -1)
 	}
 
 	for _, c := range s {
@@ -156,11 +199,10 @@ func (w *WordWrap) Write(b []byte) (int, error) {
 			w.addSpace()
 			w.addWord()
 			w.buf.WriteRune(c)
-		} else if w.HardBreak && w.lineLen+runewidth.RuneWidth(c) > w.Limit {
-			// Word excends the limite -> break and begin new line/word
+		} else if w.HardWrap && w.lineLen+w.word.PrintableRuneWidth()+runewidth.RuneWidth(c)+w.space.Len() == w.Limit {
+			// Word is at the limite -> begin new word
+			w.word.WriteRune(c)
 			w.addWord()
-			w.addNewLine()
-			w.buf.WriteRune(c)
 		} else {
 			// any other character
 			_, _ = w.word.WriteRune(c)
@@ -180,7 +222,14 @@ func (w *WordWrap) Write(b []byte) (int, error) {
 // Close will finish the word-wrap operation. Always call it before trying to
 // retrieve the final result.
 func (w *WordWrap) Close() error {
+	if w.HardWrap && w.word.PrintableRuneWidth()+w.lineLen > w.Limit {
+		w.addNewLine()
+	}
+	if w.PreserveSpaces {
+		w.addSpace()
+	}
 	w.addWord()
+
 	return nil
 }
 
