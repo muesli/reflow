@@ -223,6 +223,7 @@ func TestHardWrap(t *testing.T) {
 			false,
 			"",
 		},
+		// If the text fits -> passing through
 		{
 			"[38;2;248;248;242m[38;2;249;38;114mtest[0m",
 			"[38;2;248;248;242m[38;2;249;38;114mtest[0m",
@@ -231,9 +232,19 @@ func TestHardWrap(t *testing.T) {
 			true,
 			"",
 		},
+		// If requested preserve spaces, no matter how much.
 		{
 			"                                        ",
 			"    \n    \n    \n    \n    \n    \n    \n    \n    \n    ",
+			4,
+			true,
+			true,
+			"",
+		},
+		// If requested preserve spaces, no matter how much and wrap them accordingly
+		{
+			"                                         ",
+			"    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n ",
 			4,
 			true,
 			true,
@@ -255,5 +266,20 @@ func TestHardWrap(t *testing.T) {
 		if f.String() != tc.Expected {
 			t.Errorf("Test %d, expected:\n\n`%s`\n\nActual Output:\n\n`%s`", i, tc.Expected, f.String())
 		}
+	}
+}
+
+func TestHardWrapShort(t *testing.T) {
+	testCase := "\x1B[38;2;249;38;114m(\x1B[0m\x1B[38;2;248;248;242mjust an\nother test\x1B[38;2;249;38;114m)\x1B[0m"
+	expected := `[38;2;249;38;114m([0m[38;2;248;248;242mju[0m
+[38;2;248;248;242mst[0m
+[38;2;248;248;242man[0m
+[38;2;248;248;242moth[0m
+[38;2;248;248;242mer[0m
+[38;2;248;248;242mtes[0m
+[38;2;248;248;242mt[38;2;249;38;114m)[0m`
+	out := HardWrap(testCase, 3, "    ")
+	if out != expected {
+		t.Errorf("From input expected:\n\n`%s`\n\nActual Output:\n\n`%s`", expected, out)
 	}
 }

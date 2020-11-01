@@ -222,9 +222,6 @@ func (w *WordWrap) Write(b []byte) (int, error) {
 // Close will finish the word-wrap operation. Always call it before trying to
 // retrieve the final result.
 func (w *WordWrap) Close() error {
-	if w.HardWrap && w.word.PrintableRuneWidth()+w.lineLen > w.Limit {
-		w.addNewLine()
-	}
 	if w.PreserveSpaces {
 		w.addSpace()
 	}
