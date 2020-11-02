@@ -21,8 +21,43 @@ func TestTruncate(t *testing.T) {
 		{
 			10,
 			"",
-			"hello",
-			"hello",
+			"foo",
+			"foo",
+		},
+		// Basic truncate:
+		{
+			3,
+			"",
+			"foobar",
+			"foo",
+		},
+		// Truncate with tail:
+		{
+			4,
+			".",
+			"foobar",
+			"foo.",
+		},
+		// Same width:
+		{
+			3,
+			"",
+			"foo",
+			"foo",
+		},
+		// Tail is longer than width:
+		{
+			2,
+			"...",
+			"foo",
+			"...",
+		},
+		// ANSI sequence codes:
+		{
+			3,
+			"",
+			"\x1B[38;2;249;38;114m你好\x1B[0m",
+			"\x1B[38;2;249;38;114m你\x1B[0m",
 		},
 	}
 
@@ -60,23 +95,13 @@ func BenchmarkTruncateString(b *testing.B) {
 	})
 }
 
-func TestTruncateWriterWithTail(t *testing.T) {
+func TestTruncateBytes(t *testing.T) {
 	t.Parallel()
 
-	f := NewWriter(5, "...")
-
-	_, err := f.Write([]byte("foo\n"))
-	if err != nil {
-		t.Error(err)
-	}
-	_, err = f.Write([]byte("bar"))
-	if err != nil {
-		t.Error(err)
-	}
-
-	exp := "..foo\n..bar"
-	if f.String() != exp {
-		t.Errorf("expected:\n\n`%s`\n\nActual Output:\n\n`%s`", exp, f.String())
+	actual := Bytes([]byte("foobar"), 3)
+	expected := []byte("foo")
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("expected:\n\n`%s`\n\nActual Output:\n\n`%s`", expected, actual)
 	}
 }
 
@@ -102,11 +127,8 @@ func TestWriter_Error(t *testing.T) {
 	t.Parallel()
 
 	f := &Writer{
+		width:      2,
 		ansiWriter: &ansi.Writer{Forward: fakeWriter{}},
-	}
-
-	if _, err := f.Write([]byte("foo")); err != fakeErr {
-		t.Error(err)
 	}
 
 	if _, err := f.Write([]byte("foo")); err != fakeErr {

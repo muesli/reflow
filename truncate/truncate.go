@@ -71,21 +71,13 @@ func StringWithTail(s string, width uint, tail string) string {
 // Write truncates content at the given printable cell width, leaving any
 // ansi sequences intact.
 func (w *Writer) Write(b []byte) (int, error) {
-	s := string(b)
-	if uint(ansi.PrintableRuneWidth(s)) < w.width {
-		return w.buf.Write(b)
+	tw := ansi.PrintableRuneWidth(w.tail)
+	if w.width < uint(tw) {
+		return w.buf.WriteString(w.tail)
 	}
 
-	if w.tail != "" {
-		w.tail += "\x1B[0m"
-		tw := ansi.PrintableRuneWidth(w.tail)
-		w.width -= uint(tw)
-		if w.width < 0 {
-			return w.buf.WriteString(w.tail)
-		}
-	}
-
-	var l uint
+	w.width -= uint(tw)
+	var curWidth uint
 
 	for _, c := range string(b) {
 		if c == '\x1B' {
@@ -97,10 +89,13 @@ func (w *Writer) Write(b []byte) (int, error) {
 				w.ansi = false
 			}
 		} else {
-			l += uint(runewidth.RuneWidth(c))
+			curWidth += uint(runewidth.RuneWidth(c))
 		}
 
-		if l > w.width {
+		if curWidth > w.width {
+			if w.ansiWriter.LastSequence() != "" {
+				w.ansiWriter.ResetAnsi()
+			}
 			return w.buf.WriteString(w.tail)
 		}
 
