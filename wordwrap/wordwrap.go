@@ -23,17 +23,17 @@ type WordWrap struct {
 	Newline        []rune
 	KeepNewlines   bool
 	HardWrap       bool
-	TabReplace     string // since tabs can have differrent lenghts, replace them with this when hardwrap is enabled
+	TabReplace     string // since tabs can have differrent lengths, replace them with this when hardwrap is enabled
 	PreserveSpaces bool
 
 	buf   bytes.Buffer // processed and, in line, accepted bytes
 	space bytes.Buffer // pending continues spaces bytes
 	word  ansi.Buffer  // pending continues word bytes
 
-	lineLen int // the visible lenght of the line not accorat for tabs
+	lineLen int // the visible length of the line not accorat for tabs
 	ansi    bool
 
-	wroteBegin bool         // mark is since the last newline something has writen to the buffer (for ansi restart)
+	wroteBegin bool         // mark is since the last newline something has written to the buffer (for ansi restart)
 	lastAnsi   bytes.Buffer // hold last active ansi sequence
 }
 
@@ -65,19 +65,19 @@ func String(s string, limit int) string {
 }
 
 // HardWrap is a shorthand for declaring a new hardwraping WordWrap instance,
-// since varibale lenght characters can not be hard wraped to a fixed lenght,
+// since variable length characters can not be hard wraped to a fixed length,
 // tabs will be replaced by TabReplace, use according amount of spaces.
 func HardWrap(s string, limit int, tabReplace string) string {
 	f := NewWriter(limit)
 	f.HardWrap = true
 	f.TabReplace = tabReplace
 	_, _ = f.Write([]byte(s))
-	f.Close()
+	_ = f.Close()
 
 	return f.String()
 }
 
-// addes pending spaces to the buf(fer) ... and resets the space buffer
+// addes pending spaces to the buf(fer) and then resets the space buffer.
 func (w *WordWrap) addSpace() {
 	// the line and the pending spaces are less than the limit
 	if w.lineLen+w.space.Len() <= w.Limit {
@@ -231,13 +231,13 @@ func (w *WordWrap) Close() error {
 }
 
 // Bytes returns the word-wrapped result as a byte slice.
-// Make sure to have closed the worwrapper, befor calling it
+// Make sure to have closed the worwrapper, befor calling it.
 func (w *WordWrap) Bytes() []byte {
 	return w.buf.Bytes()
 }
 
 // String returns the word-wrapped result as a string.
-// Make sure to have closed the worwrapper, befor calling it
+// Make sure to have closed the worwrapper, befor calling it.
 func (w *WordWrap) String() string {
 	return w.buf.String()
 }
