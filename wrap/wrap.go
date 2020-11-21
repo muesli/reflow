@@ -5,6 +5,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/mattn/go-runewidth"
 	"github.com/muesli/reflow/ansi"
 )
 
@@ -83,7 +84,9 @@ func (w *Wrap) Write(b []byte) (int, error) {
 			w.addNewLine()
 			continue
 		} else {
-			if w.lineLen >= w.Limit {
+			width := runewidth.RuneWidth(c)
+
+			if w.lineLen+width > w.Limit {
 				w.addNewLine()
 			}
 
@@ -91,7 +94,7 @@ func (w *Wrap) Write(b []byte) (int, error) {
 				continue
 			}
 
-			w.lineLen++
+			w.lineLen += width
 		}
 
 		_, _ = w.buf.WriteRune(c)
