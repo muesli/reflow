@@ -21,18 +21,23 @@ type Wrap struct {
 	PreserveSpace bool
 	TabWidth      int
 
-	buf     *bytes.Buffer
-	lineLen int
-	ansi    bool
+	buf             *bytes.Buffer
+	lineLen         int
+	ansi            bool
+	forcefulNewline bool
 }
 
 // NewWriter returns a new instance of a wrapping writer, initialized with
 // default settings.
 func NewWriter(limit int) *Wrap {
 	return &Wrap{
-		Limit:         limit,
-		Newline:       defaultNewline,
-		KeepNewlines:  true,
+		Limit:        limit,
+		Newline:      defaultNewline,
+		KeepNewlines: true,
+		// Keep whitespaces following a forceful line break. If disabled,
+		// leading whitespaces in a line are only kept if the line break
+		// was not forceful, meaning a line break that was already present
+		// in the input
 		PreserveSpace: false,
 		TabWidth:      defaultTabWidth,
 
@@ -82,16 +87,22 @@ func (w *Wrap) Write(b []byte) (int, error) {
 			}
 		} else if inGroup(w.Newline, c) {
 			w.addNewLine()
+			w.forcefulNewline = false
 			continue
 		} else {
 			width := runewidth.RuneWidth(c)
 
 			if w.lineLen+width > w.Limit {
 				w.addNewLine()
+				w.forcefulNewline = true
 			}
 
-			if !w.PreserveSpace && w.lineLen == 0 && unicode.IsSpace(c) {
-				continue
+			if w.lineLen == 0 {
+				if w.forcefulNewline && !w.PreserveSpace && unicode.IsSpace(c) {
+					continue
+				}
+			} else {
+				w.forcefulNewline = false
 			}
 
 			w.lineLen += width

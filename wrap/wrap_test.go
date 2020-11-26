@@ -58,13 +58,22 @@ func TestWrap(t *testing.T) {
 			PreserveSpace: false,
 			TabWidth:      0,
 		},
-		// Leading whitespaces can be preserved if desired
+		// Leading whitespaces after forceful line break can be preserved if desired
 		{
-			Input:         "foo bar",
-			Expected:      "foo\n ba\nr",
+			Input:         "foo bar\n  baz",
+			Expected:      "foo\n ba\nr\n  b\naz",
 			Limit:         3,
 			KeepNewlines:  true,
 			PreserveSpace: true,
+			TabWidth:      0,
+		},
+		// Leading whitespaces after forceful line break can be removed if desired
+		{
+			Input:         "foo bar\n  baz",
+			Expected:      "foo\nbar\n  b\naz",
+			Limit:         3,
+			KeepNewlines:  true,
+			PreserveSpace: false,
 			TabWidth:      0,
 		},
 		// Tabs are broken up according to the configured TabWidth
