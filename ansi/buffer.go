@@ -23,11 +23,11 @@ func PrintableRuneWidth(s string) int {
 	var ansi bool
 
 	for _, c := range s {
-		if c == '\x1B' {
+		if c == Marker {
 			// ANSI escape sequence
 			ansi = true
 		} else if ansi {
-			if (c >= 0x40 && c <= 0x5a) || (c >= 0x61 && c <= 0x7a) {
+			if IsTerminator(c) {
 				// ANSI sequence terminated
 				ansi = false
 			}

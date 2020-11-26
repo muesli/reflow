@@ -45,6 +45,58 @@ f.Breakpoints = []rune{':', ','}
 f.Newline = []rune{'\r'}
 ```
 
+## Unconditional Wrapping
+
+The `wrap` package lets you unconditionally wrap strings or entire blocks of text.
+
+```go
+import "github.com/muesli/reflow/wrap"
+
+s := wrap.String("Hello World!", 7)
+fmt.Println(s)
+```
+
+Result:
+```
+Hello W
+orld!
+```
+
+The unconditional wrapping Writer is compatible with the `io.Writer` interfaces:
+
+```go
+f := wrap.NewWriter(limit)
+f.Write(b)
+
+fmt.Println(f.String())
+```
+
+Customize word-wrapping behavior:
+
+```go
+f := wrap.NewWriter(limit)
+f.Newline = []rune{'\r'}
+f.KeepNewlines = false
+f.reserveSpace = true
+f.TabWidth = 2
+```
+
+**Tip:** This wrapping method can be used in conjunction with word-wrapping when word-wrapping is preferred but a line limit has to be enforced:
+
+```go
+wrapped := wrap.String(wordwrap.String("Just an example", 5), 5)
+fmt.Println(wrapped)
+```
+
+Result:
+```
+Just
+an
+examp
+le
+```
+
+
 ### ANSI Example
 
 ```go
