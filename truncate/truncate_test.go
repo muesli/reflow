@@ -52,12 +52,47 @@ func TestTruncate(t *testing.T) {
 			"foo",
 			"...",
 		},
-		// ANSI sequence codes:
+		// Spaces only:
+		{
+			2,
+			"…",
+			"    ",
+			" …",
+		},
+		// Double-width runes:
+		{
+			2,
+			"",
+			"你好",
+			"你",
+		},
+		// Double-width rune is dropped if it is too wide:
+		{
+			1,
+			"",
+			"你",
+			"",
+		},
+		// ANSI sequence codes and double-width characters:
 		{
 			3,
 			"",
 			"\x1B[38;2;249;38;114m你好\x1B[0m",
 			"\x1B[38;2;249;38;114m你\x1B[0m",
+		},
+		// Reset styling sequence is added after truncate:
+		{
+			1,
+			"",
+			"\x1B[7m--",
+			"\x1B[7m-\x1B[0m",
+		},
+		// Reset styling sequence not added if operation is a noop:
+		{
+			2,
+			"",
+			"\x1B[7m--",
+			"\x1B[7m--",
 		},
 	}
 
