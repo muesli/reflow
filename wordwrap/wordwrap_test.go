@@ -250,6 +250,15 @@ func TestHardWrap(t *testing.T) {
 			true,
 			"",
 		},
+		// hyphens have also to be hardwrapped
+		{
+			"------------------------------------",
+			"----\n----\n----\n----\n----\n----\n----\n----\n----",
+			4,
+			true,
+			true,
+			"",
+		},
 	}
 	for i, tc := range tt {
 		f := NewWriter(tc.Limit)
