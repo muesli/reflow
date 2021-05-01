@@ -94,6 +94,13 @@ func TestTruncate(t *testing.T) {
 			"\x1B[7m--",
 			"\x1B[7m--",
 		},
+		// Tail is printed before reset sequence:
+		{
+			3,
+			"…",
+			"\x1B[38;5;219mHiya!",
+			"\x1B[38;5;219mHi…\x1B[0m",
+		},
 	}
 
 	for i, tc := range tt {
