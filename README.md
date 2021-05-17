@@ -119,7 +119,10 @@ s := indent.String("Hello World!", 4)
 fmt.Println(s)
 ```
 
-Result: `    Hello World!`
+Result:
+```
+    Hello World!
+```
 
 There is also an indenting Writer, which is compatible with the `io.Writer`
 interface:
