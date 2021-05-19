@@ -1,6 +1,7 @@
 package wrap
 
 import (
+	"bytes"
 	"testing"
 )
 
@@ -132,9 +133,21 @@ func TestWrap(t *testing.T) {
 }
 
 func TestWrapString(t *testing.T) {
+	t.Parallel()
+
 	actual := String("foo bar", 3)
 	expected := "foo\nbar"
 	if actual != expected {
+		t.Errorf("expected:\n\n`%s`\n\nActual Output:\n\n`%s`", expected, actual)
+	}
+}
+
+func TestWrapBytes(t *testing.T) {
+	t.Parallel()
+
+	actual := Bytes([]byte("foo bar"), 3)
+	expected := []byte("foo\nbar")
+	if !bytes.Equal(actual, expected) {
 		t.Errorf("expected:\n\n`%s`\n\nActual Output:\n\n`%s`", expected, actual)
 	}
 }
