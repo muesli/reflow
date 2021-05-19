@@ -3,7 +3,7 @@
 [![Latest Release](https://img.shields.io/github/release/muesli/reflow.svg)](https://github.com/muesli/reflow/releases)
 [![Build Status](https://github.com/muesli/reflow/workflows/build/badge.svg)](https://github.com/muesli/reflow/actions)
 [![Coverage Status](https://coveralls.io/repos/github/muesli/reflow/badge.svg?branch=master)](https://coveralls.io/github/muesli/reflow?branch=master)
-[![Go ReportCard](http://goreportcard.com/badge/muesli/reflow)](http://goreportcard.com/report/muesli/reflow)
+[![Go ReportCard](https://goreportcard.com/badge/muesli/reflow)](https://goreportcard.com/report/muesli/reflow)
 [![GoDoc](https://godoc.org/github.com/golang/gddo?status.svg)](https://pkg.go.dev/github.com/muesli/reflow)
 
 A collection of ANSI-aware methods and `io.Writers` helping you to transform
