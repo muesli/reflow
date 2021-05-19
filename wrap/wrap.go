@@ -51,7 +51,7 @@ func Bytes(b []byte, limit int) []byte {
 	f := NewWriter(limit)
 	_, _ = f.Write(b)
 
-	return f.buf.Bytes()
+	return f.Bytes()
 }
 
 func (w *Wrap) addNewLine() {
