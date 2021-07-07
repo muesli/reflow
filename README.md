@@ -77,7 +77,7 @@ Customize word-wrapping behavior:
 f := wrap.NewWriter(limit)
 f.Newline = []rune{'\r'}
 f.KeepNewlines = false
-f.reserveSpace = true
+f.PreserveSpace = true
 f.TabWidth = 2
 ```
 
