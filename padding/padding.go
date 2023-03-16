@@ -3,7 +3,8 @@ package padding
 import (
 	"bytes"
 	"io"
-	"strings"
+	"sync"
+	"unicode/utf8"
 
 	"github.com/mattn/go-runewidth"
 	"github.com/muesli/reflow/ansi"
@@ -20,12 +21,14 @@ type Writer struct {
 	cache      bytes.Buffer
 	lineLen    int
 	ansi       bool
+	runeBuf    []byte
 }
 
 func NewWriter(width uint, paddingFunc PaddingFunc) *Writer {
 	w := &Writer{
 		Padding: width,
 		PadFunc: paddingFunc,
+		runeBuf: make([]byte, utf8.UTFMax),
 	}
 	w.ansiWriter = &ansi.Writer{
 		Forward: &w.buf,
@@ -37,6 +40,7 @@ func NewWriterPipe(forward io.Writer, width uint, paddingFunc PaddingFunc) *Writ
 	return &Writer{
 		Padding: width,
 		PadFunc: paddingFunc,
+		runeBuf: make([]byte, utf8.UTFMax),
 		ansiWriter: &ansi.Writer{
 			Forward: forward,
 		},
@@ -46,11 +50,16 @@ func NewWriterPipe(forward io.Writer, width uint, paddingFunc PaddingFunc) *Writ
 // Bytes is shorthand for declaring a new default padding-writer instance,
 // used to immediately pad a byte slice.
 func Bytes(b []byte, width uint) []byte {
-	f := NewWriter(width, nil)
-	_, _ = f.Write(b)
-	_ = f.Flush()
+	f := acquireWriter(width)
+	defer wp.Put(f)
 
-	return f.Bytes()
+	_, _ = f.Write(b)
+
+	if f.lineLen != 0 {
+		_ = f.pad()
+	}
+
+	return f.buf.Bytes()
 }
 
 // String is shorthand for declaring a new default padding-writer instance,
@@ -71,7 +80,7 @@ func (w *Writer) Write(b []byte) (int, error) {
 				w.ansi = false
 			}
 		} else {
-			w.lineLen += runewidth.StringWidth(string(c))
+			w.lineLen += runewidth.RuneWidth(c)
 
 			if c == '\n' {
 				// end of current line
@@ -84,7 +93,7 @@ func (w *Writer) Write(b []byte) (int, error) {
 			}
 		}
 
-		_, err := w.ansiWriter.Write([]byte(string(c)))
+		_, err := w.writeRune(c)
 		if err != nil {
 			return 0, err
 		}
@@ -100,7 +109,7 @@ func (w *Writer) pad() error {
 				w.PadFunc(w.ansiWriter)
 			}
 		} else {
-			_, err := w.ansiWriter.Write([]byte(strings.Repeat(" ", int(w.Padding)-w.lineLen)))
+			_, err := w.ansiWriter.Write(bytes.Repeat([]byte(" "), int(w.Padding)-w.lineLen))
 			if err != nil {
 				return err
 			}
@@ -108,6 +117,11 @@ func (w *Writer) pad() error {
 	}
 
 	return nil
+}
+
+func (w *Writer) writeRune(r rune) (int, error) {
+	n := utf8.EncodeRune(w.runeBuf, r)
+	return w.ansiWriter.Write(w.runeBuf[:n])
 }
 
 // Close will finish the padding operation.
@@ -140,4 +154,24 @@ func (w *Writer) Flush() (err error) {
 	w.ansi = false
 
 	return
+}
+
+var wp = sync.Pool{
+	New: func() interface{} {
+		w := &Writer{runeBuf: make([]byte, utf8.UTFMax)}
+		w.ansiWriter = &ansi.Writer{
+			Forward: &w.buf,
+		}
+		return w
+	},
+}
+
+func acquireWriter(width uint) *Writer {
+	w := wp.Get().(*Writer)
+	w.Padding = width
+	w.lineLen = 0
+	w.ansi = false
+	w.buf.Reset()
+
+	return w
 }

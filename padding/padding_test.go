@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/muesli/reflow/ansi"
 )
@@ -100,6 +101,7 @@ func TestPaddingString(t *testing.T) {
 	}
 }
 
+// go test -bench=BenchmarkPaddingString -benchmem -count=4
 func BenchmarkPaddingString(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		b.ReportAllocs()
@@ -201,6 +203,7 @@ func TestWriter_Error(t *testing.T) {
 
 	f := &Writer{
 		Padding:    6,
+		runeBuf:    make([]byte, utf8.UTFMax),
 		ansiWriter: &ansi.Writer{Forward: fakeWriter{}},
 	}
 
