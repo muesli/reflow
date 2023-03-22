@@ -121,10 +121,10 @@ func TestWordWrap(t *testing.T) {
 			7,
 			true,
 		},
-		// ANSI control codes don't get wrapped:
+		// ANSI control codes don't get wrapped, but get finished and again started at each line break:
 		{
 			"\x1B[38;2;249;38;114m(\x1B[0m\x1B[38;2;248;248;242mjust another test\x1B[38;2;249;38;114m)\x1B[0m",
-			"\x1B[38;2;249;38;114m(\x1B[0m\x1B[38;2;248;248;242mjust\nanother\ntest\x1B[38;2;249;38;114m)\x1B[0m",
+			"\x1B[38;2;249;38;114m(\x1B[0m\x1B[38;2;248;248;242mjust\x1B[0m\n\x1B[38;2;248;248;242manother\x1B[0m\n\x1B[38;2;248;248;242mtest\x1B[38;2;249;38;114m)\x1B[0m",
 			3,
 			true,
 		},
@@ -151,5 +151,144 @@ func TestWordWrapString(t *testing.T) {
 	expected := "foo\nbar"
 	if actual != expected {
 		t.Errorf("expected:\n\n`%s`\n\nActual Output:\n\n`%s`", expected, actual)
+	}
+}
+
+func TestHardWrap(t *testing.T) {
+	tt := []struct {
+		Input          string
+		Expected       string
+		Limit          int
+		KeepNewlines   bool
+		PreserveSpaces bool
+		TabReplace     string
+	}{
+		// hardwrap wraps at limit and does not add newline if there is not more text
+		{
+			"foobarfoobar",
+			"foo\nbar\nfoo\nbar",
+			3,
+			true,
+			true,
+			"",
+		},
+		// With no TabReplace string tabs get ignored
+		{
+			"\tfoo\tbar\tfoo\tbar",
+			"foo\nbar\nfoo\nbar",
+			3,
+			true,
+			true,
+			"",
+		},
+		// limit of zero gets ignored
+		{
+			"foobar",
+			"foobar",
+			0,
+			true,
+			true,
+			"",
+		},
+		// ANSI gets ended and restarted at each linebreak, so that the ansi is self contained within a line.
+		{
+			"\x1B[38;2;249;38;114m(\x1B[0m\x1B[38;2;248;248;242mjust an\nother test\x1B[38;2;249;38;114m)\x1B[0m",
+			`[38;2;249;38;114m([0m[38;2;248;248;242mju[0m
+[38;2;248;248;242mst [0m
+[38;2;248;248;242man[0m
+[38;2;248;248;242moth[0m
+[38;2;248;248;242mer [0m
+[38;2;248;248;242mtes[0m
+[38;2;248;248;242mt[38;2;249;38;114m)[0m`,
+			3,
+			true,
+			true,
+			"",
+		},
+		// if requested spaces are preserved as are Explicit linebreaks:
+		{
+			"\nfoo bar\n\n\nfoo\n",
+			"\nfoo \nbar\n\n\nfoo\n",
+			4,
+			true,
+			true,
+			"",
+		},
+		// Unless we ask them to be ignored:
+		{
+			"\nfoo bar\n\n\nfoo\n",
+			"foo\nbar\nfoo",
+			4,
+			false,
+			false,
+			"",
+		},
+		// If the text fits -> passing through
+		{
+			"[38;2;248;248;242m[38;2;249;38;114mtest[0m",
+			"[38;2;248;248;242m[38;2;249;38;114mtest[0m",
+			4,
+			true,
+			true,
+			"",
+		},
+		// If requested preserve spaces, no matter how much.
+		{
+			"                                        ",
+			"    \n    \n    \n    \n    \n    \n    \n    \n    \n    ",
+			4,
+			true,
+			true,
+			"",
+		},
+		// If requested preserve spaces, no matter how much and wrap them accordingly
+		{
+			"                                         ",
+			"    \n    \n    \n    \n    \n    \n    \n    \n    \n    \n ",
+			4,
+			true,
+			true,
+			"",
+		},
+		// hyphens have also to be hardwrapped
+		{
+			"------------------------------------",
+			"----\n----\n----\n----\n----\n----\n----\n----\n----",
+			4,
+			true,
+			true,
+			"",
+		},
+	}
+	for i, tc := range tt {
+		f := NewWriter(tc.Limit)
+		f.KeepNewlines = tc.KeepNewlines
+		f.HardWrap = true
+		f.PreserveSpaces = tc.PreserveSpaces
+
+		_, err := f.Write([]byte(tc.Input))
+		if err != nil {
+			t.Error(err)
+		}
+		f.Close()
+
+		if f.String() != tc.Expected {
+			t.Errorf("Test %d, expected:\n\n`%s`\n\nActual Output:\n\n`%s`", i, tc.Expected, f.String())
+		}
+	}
+}
+
+func TestHardWrapShort(t *testing.T) {
+	testCase := "\x1B[38;2;249;38;114m(\x1B[0m\x1B[38;2;248;248;242mjust an\nother test\x1B[38;2;249;38;114m)\x1B[0m"
+	expected := `[38;2;249;38;114m([0m[38;2;248;248;242mju[0m
+[38;2;248;248;242mst[0m
+[38;2;248;248;242man[0m
+[38;2;248;248;242moth[0m
+[38;2;248;248;242mer[0m
+[38;2;248;248;242mtes[0m
+[38;2;248;248;242mt[38;2;249;38;114m)[0m`
+	out := HardWrap(testCase, 3, "    ")
+	if out != expected {
+		t.Errorf("From input expected:\n\n`%s`\n\nActual Output:\n\n`%s`", expected, out)
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"strings"
 	"unicode"
 
+	runewidth "github.com/mattn/go-runewidth"
 	"github.com/muesli/reflow/ansi"
 )
 
@@ -17,17 +18,23 @@ var (
 // support for ANSI escape sequences. This means you can style your terminal
 // output without affecting the word wrapping algorithm.
 type WordWrap struct {
-	Limit        int
-	Breakpoints  []rune
-	Newline      []rune
-	KeepNewlines bool
+	Limit          int
+	Breakpoints    []rune
+	Newline        []rune
+	KeepNewlines   bool
+	HardWrap       bool
+	TabReplace     string // since tabs can have different lengths, replace them with this when hardwrap is enabled
+	PreserveSpaces bool
 
-	buf   bytes.Buffer
-	space bytes.Buffer
-	word  ansi.Buffer
+	buf   bytes.Buffer // processed and, in line, accepted bytes
+	space bytes.Buffer // pending continues spaces bytes
+	word  ansi.Buffer  // pending continues word bytes
 
-	lineLen int
+	lineLen int // the visible length of the line (not accurate for tabs)
 	ansi    bool
+
+	wroteBegin bool         // mark if the buffer has been written to since the last newline (for ansi restart)
+	lastAnsi   bytes.Buffer // hold last active ansi sequence
 }
 
 // NewWriter returns a new instance of a word-wrapping writer, initialized with
@@ -57,9 +64,45 @@ func String(s string, limit int) string {
 	return string(Bytes([]byte(s), limit))
 }
 
+// HardWrap is a shorthand for declaring a new hardwrapping WordWrap instance,
+// since variable length characters can not be hard wrapped to a fixed length,
+// tabs will be replaced by TabReplace, use according amount of spaces.
+func HardWrap(s string, limit int, tabReplace string) string {
+	f := NewWriter(limit)
+	f.HardWrap = true
+	f.TabReplace = tabReplace
+	_, _ = f.Write([]byte(s))
+	_ = f.Close()
+
+	return f.String()
+}
+
+// adds pending spaces to the buf(fer) and then resets the space buffer.
 func (w *WordWrap) addSpace() {
-	w.lineLen += w.space.Len()
-	_, _ = w.buf.Write(w.space.Bytes())
+	// the line and the pending spaces are less than the limit
+	if w.lineLen+w.space.Len() <= w.Limit {
+		w.lineLen += w.space.Len()
+		_, _ = w.buf.Write(w.space.Bytes())
+
+		// the existing line and the pending spaces would overflow the limit
+	} else {
+		// fill up the rest of the line with spaces
+		length := w.space.Len()
+		rest := w.Limit - w.lineLen
+		_, _ = w.buf.WriteString(strings.Repeat(" ", rest))
+		length -= rest
+
+		// when the amount of spaces is longer than a whole line limit, write the spaces into multiple lines.
+		for length >= w.Limit {
+			_, _ = w.buf.WriteString("\n" + strings.Repeat(" ", w.Limit))
+			length -= w.Limit
+		}
+		// write the remaining spaces which are less than the limit
+		if length > 0 {
+			_, _ = w.buf.WriteString("\n" + strings.Repeat(" ", length))
+		}
+		w.lineLen = length
+	}
 	w.space.Reset()
 }
 
@@ -73,9 +116,17 @@ func (w *WordWrap) addWord() {
 }
 
 func (w *WordWrap) addNewLine() {
-	_, _ = w.buf.WriteRune('\n')
+	if w.PreserveSpaces {
+		w.addSpace()
+	}
+	if w.lastAnsi.Len() != 0 {
+		// end ansi before linebreak
+		w.buf.WriteString("\x1b[0m")
+	}
+	w.buf.WriteRune('\n')
 	w.lineLen = 0
 	w.space.Reset()
+	w.wroteBegin = false
 }
 
 func inGroup(a []rune, c rune) bool {
@@ -98,16 +149,31 @@ func (w *WordWrap) Write(b []byte) (int, error) {
 		s = strings.Replace(strings.TrimSpace(s), "\n", " ", -1)
 	}
 
+	if w.HardWrap {
+		s = strings.Replace(s, "\t", w.TabReplace, -1)
+	}
+
 	for _, c := range s {
+		// Restart Ansi after line break if there is more text
+		if !w.wroteBegin && !w.ansi && w.lastAnsi.Len() != 0 {
+			w.buf.Write(w.lastAnsi.Bytes())
+			w.addWord()
+		}
+		w.wroteBegin = true
 		if c == '\x1B' {
 			// ANSI escape sequence
-			_, _ = w.word.WriteRune(c)
+			w.word.WriteRune(c)
+			w.lastAnsi.WriteRune(c)
 			w.ansi = true
 		} else if w.ansi {
-			_, _ = w.word.WriteRune(c)
+			w.word.WriteRune(c)
+			w.lastAnsi.WriteRune(c)
 			if (c >= 0x40 && c <= 0x5a) || (c >= 0x61 && c <= 0x7a) {
 				// ANSI sequence terminated
 				w.ansi = false
+			}
+			if c == 'm' && strings.HasSuffix(w.lastAnsi.String(), "\x1b[0m") {
+				w.lastAnsi.Reset()
 			}
 		} else if inGroup(w.Newline, c) {
 			// end of current line
@@ -132,7 +198,19 @@ func (w *WordWrap) Write(b []byte) (int, error) {
 			// valid breakpoint
 			w.addSpace()
 			w.addWord()
-			_, _ = w.buf.WriteRune(c)
+			_, _ = w.word.WriteRune(c)
+
+			// Wrap line if the breakpoint would exceed the Limit
+			if w.HardWrap && w.lineLen+w.space.Len()+runewidth.RuneWidth(c) > w.Limit {
+				w.addNewLine()
+			}
+
+			// treat breakpoint as single character length words
+			w.addWord()
+		} else if w.HardWrap && w.lineLen+w.word.PrintableRuneWidth()+runewidth.RuneWidth(c)+w.space.Len() == w.Limit {
+			// Word is at the limit -> begin new word
+			w.word.WriteRune(c)
+			w.addWord()
 		} else {
 			// any other character
 			_, _ = w.word.WriteRune(c)
@@ -152,16 +230,22 @@ func (w *WordWrap) Write(b []byte) (int, error) {
 // Close will finish the word-wrap operation. Always call it before trying to
 // retrieve the final result.
 func (w *WordWrap) Close() error {
+	if w.PreserveSpaces {
+		w.addSpace()
+	}
 	w.addWord()
+
 	return nil
 }
 
 // Bytes returns the word-wrapped result as a byte slice.
+// Make sure to have closed the WordWrapper, before calling it.
 func (w *WordWrap) Bytes() []byte {
 	return w.buf.Bytes()
 }
 
 // String returns the word-wrapped result as a string.
+// Make sure to have closed the WordWrapper, before calling it.
 func (w *WordWrap) String() string {
 	return w.buf.String()
 }
