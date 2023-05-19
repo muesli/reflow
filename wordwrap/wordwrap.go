@@ -78,6 +78,11 @@ func (w *WordWrap) addNewLine() {
 	w.space.Reset()
 }
 
+func (w *WordWrap) addBreakpoint(c rune) {
+	n, _ := w.buf.WriteRune(c)
+	w.lineLen += n
+}
+
 func inGroup(a []rune, c rune) bool {
 	for _, v := range a {
 		if v == c {
@@ -132,7 +137,7 @@ func (w *WordWrap) Write(b []byte) (int, error) {
 			// valid breakpoint
 			w.addSpace()
 			w.addWord()
-			_, _ = w.buf.WriteRune(c)
+			w.addBreakpoint(c)
 		} else {
 			// any other character
 			_, _ = w.word.WriteRune(c)

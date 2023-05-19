@@ -47,6 +47,13 @@ func TestWordWrap(t *testing.T) {
 			4,
 			true,
 		},
+		// A breakpoint counts towards when to wrap:
+		{
+			"foo-a-bar",
+			"foo-\na-\nbar",
+			4,
+			true,
+		},
 		// Space buffer needs to be emptied before breakpoints:
 		{
 			"foo --bar",
