@@ -38,10 +38,24 @@ func TestTruncate(t *testing.T) {
 			"foobar",
 			"foo.",
 		},
-		// Same width:
+		// Same width with no tail:
 		{
 			3,
 			"",
+			"foo",
+			"foo",
+		},
+		// Same width with tail:
+		{
+			3,
+			".",
+			"foo",
+			"foo",
+		},
+		// Pass through when in + tail longer than width, but in shorter:
+		{
+			4,
+			"...",
 			"foo",
 			"foo",
 		},
@@ -65,6 +79,13 @@ func TestTruncate(t *testing.T) {
 			"",
 			"你好",
 			"你",
+		},
+		// Double-width runes with tail:
+		{
+			4,
+			".",
+			"你好",
+			"你好",
 		},
 		// Double-width rune is dropped if it is too wide:
 		{
