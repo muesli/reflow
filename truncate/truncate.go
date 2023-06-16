@@ -76,9 +76,10 @@ func (w *Writer) Write(b []byte) (int, error) {
 		return w.buf.WriteString(w.tail)
 	}
 
-	w.width -= uint(tw)
+	safeWidth := w.width - uint(tw)
 	var curWidth uint
 
+	var tailcs []rune
 	for _, c := range string(b) {
 		if c == ansi.Marker {
 			// ANSI escape sequence
@@ -98,8 +99,18 @@ func (w *Writer) Write(b []byte) (int, error) {
 				w.ansiWriter.ResetAnsi()
 			}
 			return n, err
+		} else if curWidth > safeWidth {
+			tailcs = append(tailcs, c) // buffer rune until it's safe to write
+		} else {
+			_, err := w.ansiWriter.Write([]byte(string(c)))
+			if err != nil {
+				return 0, err
+			}
 		}
+	}
 
+	// never exceeded width, so safe to write buffered tail runes
+	for _, c := range tailcs {
 		_, err := w.ansiWriter.Write([]byte(string(c)))
 		if err != nil {
 			return 0, err
