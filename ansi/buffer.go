@@ -34,57 +34,56 @@ func PrintableRuneWidth(s string) int {
 	var cpIdx int = -1 // index of first code point byte
 	// range over bytes not runes
 	for i := 0; i < len(s); i++ {
-		b := s[i]
 		switch state {
 		case nF: // [0x20—0x2F]+[0x30-0x7E]
 			switch {
-			case b >= 0x20 && b <= 0x2F:
-			case i > 0 && s[i-1] >= 0x20 && s[i-1] <= 0x2F && b >= 0x30 && b <= 0x7E:
+			case s[i] >= 0x20 && s[i] <= 0x2F:
+			case i > 0 && s[i-1] >= 0x20 && s[i-1] <= 0x2F && s[i] >= 0x30 && s[i] <= 0x7E:
 				state = text
 			default:
 				// fail
 				state = text
 			}
 		case csi: // [0x40-0x7E]
-			if b >= 0x40 && b <= 0x7E {
+			if s[i] >= 0x40 && s[i] <= 0x7E {
 				state = text
 			}
 		case stTerminated:
-			if b == '\a' || (i > 0 && b == '\\' && s[i-1] == '\033') {
+			if s[i] == '\a' || (i > 0 && s[i] == '\\' && s[i-1] == '\033') {
 				state = text
 			}
 		// case terminology:
-		//     if b == '\x00' {
+		//     if s[i] == '\x00' {
 		//         state = text
 		//     }
 		case text:
 			if i > 0 && s[i-1] == '\033' {
 				switch {
 				// nF escape sequences [0x20—0x2F]+[0x30-0x7E]
-				case b >= 0x20 && b <= 0x2F:
+				case s[i] >= 0x20 && s[i] <= 0x2F:
 					state = nF
 
 				// Fp escape sequences [0x30—0x3F]
-				case b >= 0x30 && b <= 0x3F:
+				case s[i] >= 0x30 && s[i] <= 0x3F:
 
 				// Fe escape sequences [0x40-0x5F]
 				// CSI - terminated by [0x40-0x7E]
-				case b == '[':
+				case s[i] == '[':
 					state = csi
 				// DCS, OSC, SOS, PM, APC - ST terminated
-				case b == 'P' || b == ']' || b == 'X' || b == '^' || b == '_':
+				case s[i] == 'P' || s[i] == ']' || s[i] == 'X' || s[i] == '^' || s[i] == '_':
 					state = stTerminated
-				case b >= 0x40 && b <= 0x5F:
+				case s[i] >= 0x40 && s[i] <= 0x5F:
 
 				// Terminology  \x00 terminated - conflicts with Fs escape sequences
 				// https://github.com/borisfaure/terminology/tree/master#extended-escapes-for-terminology-only
-				// case recognizeTerminologyEscSequences && r == '}':
+				// case recognizeTerminologyEscSequences && s[i] == '}':
 				//     state = terminology
 				// Fs escape sequences [0x60—0x7E]
-				case b >= 0x60 && b <= 0x7E:
+				case s[i] >= 0x60 && s[i] <= 0x7E:
 				}
 			} else {
-				if utf8.RuneStart(b) {
+				if utf8.RuneStart(s[i]) {
 					cpIdx = i
 				}
 				// cpBytes := unsafe.Slice(unsafe.StringData(s[cpIdx:i+1]), i-cpIdx+1) // go 1.20
