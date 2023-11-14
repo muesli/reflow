@@ -49,7 +49,7 @@ func PrintableRuneWidth(s string) int {
 				state = text
 			}
 		case stTerminated:
-			if s[i] == '\a' || (i > 0 && s[i] == '\\' && s[i-1] == '\033') {
+			if s[i] == '\a' || (i > 0 && s[i] == '\\' && s[i-1] == 0x1B) {
 				state = text
 			}
 		// case terminology:
@@ -57,7 +57,7 @@ func PrintableRuneWidth(s string) int {
 		//         state = text
 		//     }
 		case text:
-			if i > 0 && s[i-1] == '\033' {
+			if i > 0 && s[i-1] == 0x1B {
 				switch {
 				// nF escape sequences [0x20—0x2F]+[0x30-0x7E]
 				case s[i] >= 0x20 && s[i] <= 0x2F:
