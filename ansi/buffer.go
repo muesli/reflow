@@ -30,7 +30,7 @@ func PrintableRuneWidth(s string) int {
 	)
 	// var recognizeTerminologyEscSequences bool = false
 	var state int8 = text
-	var ret int
+	var n int
 	var cpIdx int = -1 // index of first code point byte
 	// range over bytes not runes
 	for i := 0; i < len(s); i++ {
@@ -91,11 +91,12 @@ func PrintableRuneWidth(s string) int {
 				cpBytes := []byte(s[cpIdx : i+1])
 				if utf8.FullRune(cpBytes) {
 					if rn, _ := utf8.DecodeRune(cpBytes); rn != utf8.RuneError {
-						ret += runewidth.RuneWidth(rn)
+						n += runewidth.RuneWidth(rn)
 					}
 				}
 			}
 		}
 	}
-	return ret
+
+	return n
 }
