@@ -47,6 +47,13 @@ func TestWordWrap(t *testing.T) {
 			4,
 			true,
 		},
+		// A hyphen should not bypass the limit:
+		{
+			"foo foo-foobar",
+			"foo\nfoo-foobar",
+			7,
+			true,
+		},
 		// Space buffer needs to be emptied before breakpoints:
 		{
 			"foo --bar",
