@@ -61,6 +61,14 @@ func TestWordWrap(t *testing.T) {
 			3,
 			true,
 		},
+		// hyphenated portions of words don't have inner breaks, but do break at
+		// the hyphen
+		{
+			"foobar-foobar-foobar",
+			"foobar-\nfoobar-\nfoobar",
+			3,
+			true,
+		},
 		// Space buffer needs to be emptied before breakpoints:
 		{
 			"foo --bar",
