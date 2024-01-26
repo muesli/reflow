@@ -3,7 +3,7 @@ package ansi
 import (
 	"bytes"
 
-	"github.com/mattn/go-runewidth"
+	"github.com/rivo/uniseg"
 )
 
 // Buffer is a buffer aware of ANSI escape sequences.
@@ -19,22 +19,22 @@ func (w Buffer) PrintableRuneWidth() int {
 
 // PrintableRuneWidth returns the cell width of the given string.
 func PrintableRuneWidth(s string) int {
-	var n int
+	n := make([]rune, 0, len(s))
 	var ansi bool
 
 	for _, c := range s {
-		if c == Marker {
+		switch {
+		case c == Marker:
 			// ANSI escape sequence
 			ansi = true
-		} else if ansi {
-			if IsTerminator(c) {
-				// ANSI sequence terminated
-				ansi = false
-			}
-		} else {
-			n += runewidth.RuneWidth(c)
+		case ansi && IsTerminator(c):
+			// ANSI sequence terminated
+			ansi = false
+		case ansi:
+		default:
+			n = append(n, c)
 		}
 	}
 
-	return n
+	return uniseg.StringWidth(string(n))
 }

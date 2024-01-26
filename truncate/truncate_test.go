@@ -170,7 +170,7 @@ func TestWriter_Error(t *testing.T) {
 
 	f := &Writer{
 		width:      2,
-		ansiWriter: &ansi.Writer{Forward: fakeWriter{}},
+		ansiWriter: ansi.Writer{Forward: fakeWriter{}},
 	}
 
 	if _, err := f.Write([]byte("foo")); err != fakeErr {
