@@ -5,8 +5,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/mattn/go-runewidth"
 	"github.com/muesli/reflow/ansi"
+	"github.com/rivo/uniseg"
 )
 
 type PaddingFunc func(w io.Writer)
@@ -71,7 +71,7 @@ func (w *Writer) Write(b []byte) (int, error) {
 				w.ansi = false
 			}
 		} else {
-			w.lineLen += runewidth.StringWidth(string(c))
+			w.lineLen += uniseg.StringWidth(string(c))
 
 			if c == '\n' {
 				// end of current line

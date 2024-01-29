@@ -5,8 +5,8 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/mattn/go-runewidth"
 	"github.com/muesli/reflow/ansi"
+	"github.com/rivo/uniseg"
 )
 
 var (
@@ -78,37 +78,42 @@ func (w *Wrap) Write(b []byte) (int, error) {
 		return w.buf.Write(b)
 	}
 
-	for _, c := range s {
-		if c == ansi.Marker {
+	state := -1
+	var cluster string
+
+	for len(s) > 0 {
+		cluster, s, width, state = uniseg.FirstGraphemeClusterInString(s, state)
+		rs := []rune(cluster)
+
+		switch {
+		case len(rs) == 1 && rs[0] == ansi.Marker:
 			w.ansi = true
-		} else if w.ansi {
-			if ansi.IsTerminator(c) {
-				w.ansi = false
-			}
-		} else if inGroup(w.Newline, c) {
+		case len(rs) == 1 && w.ansi && ansi.IsTerminator(rs[0]):
+			w.ansi = false
+		case w.ansi:
+		case len(rs) == 1 && inGroup(w.Newline, rs[0]):
 			w.addNewLine()
 			w.forcefulNewline = false
 			continue
-		} else {
-			width := runewidth.RuneWidth(c)
-
+		default:
 			if w.lineLen+width > w.Limit {
 				w.addNewLine()
 				w.forcefulNewline = true
 			}
 
-			if w.lineLen == 0 {
-				if w.forcefulNewline && !w.PreserveSpace && unicode.IsSpace(c) {
+			switch {
+			case w.lineLen == 0:
+				if len(rs) == 1 && w.forcefulNewline && !w.PreserveSpace && unicode.IsSpace(rs[0]) {
 					continue
 				}
-			} else {
+			default:
 				w.forcefulNewline = false
 			}
 
 			w.lineLen += width
 		}
 
-		_, _ = w.buf.WriteRune(c)
+		_, _ = w.buf.WriteString(cluster)
 	}
 
 	return len(b), nil

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/mattn/go-runewidth"
+	"github.com/rivo/uniseg"
 
 	"github.com/muesli/reflow/ansi"
 )
@@ -13,27 +13,27 @@ type Writer struct {
 	width uint
 	tail  string
 
-	ansiWriter *ansi.Writer
+	ansiWriter ansi.Writer
 	buf        bytes.Buffer
 	ansi       bool
 }
 
 func NewWriter(width uint, tail string) *Writer {
-	w := &Writer{
+	w := Writer{
 		width: width,
 		tail:  tail,
 	}
-	w.ansiWriter = &ansi.Writer{
+	w.ansiWriter = ansi.Writer{
 		Forward: &w.buf,
 	}
-	return w
+	return &w
 }
 
 func NewWriterPipe(forward io.Writer, width uint, tail string) *Writer {
 	return &Writer{
 		width: width,
 		tail:  tail,
-		ansiWriter: &ansi.Writer{
+		ansiWriter: ansi.Writer{
 			Forward: forward,
 		},
 	}
@@ -79,17 +79,24 @@ func (w *Writer) Write(b []byte) (int, error) {
 	w.width -= uint(tw)
 	var curWidth uint
 
-	for _, c := range string(b) {
-		if c == ansi.Marker {
+	rest := b
+	state := -1
+	var cluster []byte
+
+	for len(rest) > 0 {
+		var width int
+		cluster, rest, width, state = uniseg.FirstGraphemeCluster(rest, state)
+
+		switch {
+		case len(cluster) == 1 && rune(cluster[0]) == ansi.Marker:
 			// ANSI escape sequence
 			w.ansi = true
-		} else if w.ansi {
-			if ansi.IsTerminator(c) {
-				// ANSI sequence terminated
-				w.ansi = false
-			}
-		} else {
-			curWidth += uint(runewidth.RuneWidth(c))
+		case len(cluster) == 1 && w.ansi && ansi.IsTerminator(rune(cluster[0])):
+			// ANSI sequence terminated
+			w.ansi = false
+		case w.ansi:
+		default:
+			curWidth += uint(width)
 		}
 
 		if curWidth > w.width {
@@ -100,7 +107,7 @@ func (w *Writer) Write(b []byte) (int, error) {
 			return n, err
 		}
 
-		_, err := w.ansiWriter.Write([]byte(string(c)))
+		_, err := w.ansiWriter.Write(cluster)
 		if err != nil {
 			return 0, err
 		}
