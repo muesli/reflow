@@ -133,6 +133,7 @@ func (w *WordWrap) Write(b []byte) (int, error) {
 			w.addSpace()
 			w.addWord()
 			_, _ = w.buf.WriteRune(c)
+			w.lineLen++
 		} else {
 			// any other character
 			_, _ = w.word.WriteRune(c)
