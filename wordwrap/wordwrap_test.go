@@ -128,6 +128,13 @@ func TestWordWrap(t *testing.T) {
 			3,
 			true,
 		},
+		// A long incorrectly formatted string:
+		{
+			"wqrs zxbvnpm ft y cvbmnkl-pqrs tyymlnbkjhg qafggsa mk pb",
+			"wqrs zxbvnpm ft y cvbmnkl-pqrs tyymlnbkjhg qafggsa\nmk pb",
+			52,
+			false,
+		},
 	}
 
 	for i, tc := range tt {
