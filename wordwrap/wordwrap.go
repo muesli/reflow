@@ -5,6 +5,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/mattn/go-runewidth"
 	"github.com/muesli/reflow/ansi"
 )
 
@@ -133,6 +134,7 @@ func (w *WordWrap) Write(b []byte) (int, error) {
 			w.addSpace()
 			w.addWord()
 			_, _ = w.buf.WriteRune(c)
+			w.lineLen += runewidth.RuneWidth(c)
 		} else {
 			// any other character
 			_, _ = w.word.WriteRune(c)
