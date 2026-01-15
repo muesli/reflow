@@ -47,6 +47,20 @@ func TestWordWrap(t *testing.T) {
 			4,
 			true,
 		},
+		// Breakpoints count towards line length:
+		{
+			"foo-a-bar",
+			"foo-\na-\nbar",
+			4,
+			true,
+		},
+		// Breakpoints in longer text don't cause incorrect wrapping:
+		{
+			"parties who may join xxx as a third-party defendant. \"Parties\" means Licensee and",
+			"parties who may join xxx as a third-party defendant. \"Parties\" means\nLicensee and",
+			76,
+			true,
+		},
 		// Space buffer needs to be emptied before breakpoints:
 		{
 			"foo --bar",
