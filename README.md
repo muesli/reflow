@@ -128,7 +128,7 @@ There is also an indenting Writer, which is compatible with the `io.Writer`
 interface:
 
 ```go
-// indent uses spaces per default:
+// indent uses spaces by default:
 f := indent.NewWriter(width, nil)
 
 // but you can also use a custom indentation function:
@@ -181,7 +181,7 @@ There is also a padding Writer, which is compatible with the `io.WriteCloser`
 interface:
 
 ```go
-// padding uses spaces per default:
+// padding uses spaces by default:
 f := padding.NewWriter(width, nil)
 
 // but you can also use a custom padding function:
