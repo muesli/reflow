@@ -26,8 +26,9 @@ type WordWrap struct {
 	space bytes.Buffer
 	word  ansi.Buffer
 
-	lineLen int
-	ansi    bool
+	lineLen    int
+	ansi       bool
+	breakpoint int // byte offset in word where the last breakpoint was seen; -1 if none
 }
 
 // NewWriter returns a new instance of a word-wrapping writer, initialized with
@@ -38,6 +39,7 @@ func NewWriter(limit int) *WordWrap {
 		Breakpoints:  defaultBreakpoints,
 		Newline:      defaultNewline,
 		KeepNewlines: true,
+		breakpoint:   -1,
 	}
 }
 
@@ -69,6 +71,7 @@ func (w *WordWrap) addWord() {
 		w.lineLen += w.word.PrintableRuneWidth()
 		_, _ = w.buf.Write(w.word.Bytes())
 		w.word.Reset()
+		w.breakpoint = -1
 	}
 }
 
@@ -129,18 +132,42 @@ func (w *WordWrap) Write(b []byte) (int, error) {
 			w.addWord()
 			_, _ = w.space.WriteRune(c)
 		} else if inGroup(w.Breakpoints, c) {
-			// valid breakpoint
-			w.addSpace()
-			w.addWord()
-			_, _ = w.buf.WriteRune(c)
+			// Record the breakpoint position within the word buffer.
+			// The word is not flushed yet — we defer the decision to
+			// break here until we know whether the full hyphenated
+			// word fits on a line.
+			_, _ = w.word.WriteRune(c)
+			w.breakpoint = w.word.Len()
 		} else {
 			// any other character
 			_, _ = w.word.WriteRune(c)
 
-			// add a line break if the current word would exceed the line's
-			// character limit
+			// Check if the current word would exceed the line's
+			// character limit.
 			if w.lineLen+w.space.Len()+w.word.PrintableRuneWidth() > w.Limit &&
 				w.word.PrintableRuneWidth() < w.Limit {
+				// The word fits on a fresh line. Wrap the whole word
+				// to the next line, keeping it intact.
+				w.addNewLine()
+			} else if w.lineLen+w.space.Len()+w.word.PrintableRuneWidth() > w.Limit &&
+				w.word.PrintableRuneWidth() >= w.Limit &&
+				w.breakpoint > 0 {
+				// The full word is too long for any line, but we
+				// have a breakpoint. Split the word at the
+				// breakpoint: flush the prefix (including the
+				// breakpoint character) to the current line and
+				// keep the suffix as the start of the next word.
+				prefix := make([]byte, w.breakpoint)
+				copy(prefix, w.word.Bytes()[:w.breakpoint])
+				suffix := make([]byte, w.word.Len()-w.breakpoint)
+				copy(suffix, w.word.Bytes()[w.breakpoint:])
+				w.word.Reset()
+				_, _ = w.word.Write(suffix)
+				w.breakpoint = -1
+
+				w.addSpace()
+				w.lineLen += len(prefix) // breakpoint chars are all ASCII
+				_, _ = w.buf.Write(prefix)
 				w.addNewLine()
 			}
 		}
