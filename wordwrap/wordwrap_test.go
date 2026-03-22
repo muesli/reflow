@@ -54,6 +54,25 @@ func TestWordWrap(t *testing.T) {
 			9,
 			true,
 		},
+		// A hyphenated word should not be split at the hyphen when the
+		// full word would fit on the next line. Here "append-only" (11
+		// chars) fits within the 15-char limit, so it should wrap to
+		// the next line as a whole word rather than being split at the
+		// hyphen.
+		{
+			"aaaaaaa append-only bbb",
+			"aaaaaaa\nappend-only bbb",
+			15,
+			true,
+		},
+		// When the hyphenated word itself exceeds the limit, breaking
+		// at the hyphen is the right choice:
+		{
+			"aaaaaaa append-only bbb",
+			"aaaaaaa\nappend-\nonly bbb",
+			10,
+			true,
+		},
 		// Lines are broken at whitespace, even if words
 		// are too long. We do not break words:
 		{
