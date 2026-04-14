@@ -65,6 +65,7 @@ func dedent(s string, indent int) string {
 			shouldOmit = true
 			_ = buf.WriteByte(s[i])
 		default:
+			shouldOmit = false
 			_ = buf.WriteByte(s[i])
 		}
 	}
