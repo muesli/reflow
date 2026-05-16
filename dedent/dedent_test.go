@@ -41,6 +41,13 @@ func TestDedent(t *testing.T) {
 			Input:    "",
 			Expected: "",
 		},
+		// Regression for #72: a flush-left line means the minimum
+		// shared indent is zero, so dedent should leave the input
+		// alone instead of stripping characters from later lines.
+		{
+			Input:    "This is an example\n\n  with no shared indent.",
+			Expected: "This is an example\n\n  with no shared indent.",
+		},
 	}
 
 	for i, tc := range tt {
