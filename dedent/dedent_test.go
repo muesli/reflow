@@ -41,6 +41,12 @@ func TestDedent(t *testing.T) {
 			Input:    "",
 			Expected: "",
 		},
+		// Mixed indented and zero-indent lines: spaces after the first
+		// non-space rune on a zero-indent line must survive. (#44)
+		{
+			Input:    "➜ DKB\n    ✓ Logged in\n  ING\n    ✓ Logged in",
+			Expected: "➜ DKB\n  ✓ Logged in\nING\n  ✓ Logged in",
+		},
 	}
 
 	for i, tc := range tt {
