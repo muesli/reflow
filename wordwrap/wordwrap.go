@@ -13,6 +13,10 @@ var (
 	defaultNewline     = []rune{'\n'}
 )
 
+// nbsp is U+00A0 NO-BREAK SPACE. unicode.IsSpace reports it as a space, but
+// by definition it must not be treated as a line-break opportunity.
+const nbsp = ' '
+
 // WordWrap contains settings and state for customisable text reflowing with
 // support for ANSI escape sequences. This means you can style your terminal
 // output without affecting the word wrapping algorithm.
@@ -124,8 +128,9 @@ func (w *WordWrap) Write(b []byte) (int, error) {
 
 			w.addWord()
 			w.addNewLine()
-		} else if unicode.IsSpace(c) {
-			// end of current word
+		} else if unicode.IsSpace(c) && c != nbsp {
+			// end of current word; NBSP is intentionally excluded so words
+			// joined by it stay glued together.
 			w.addWord()
 			_, _ = w.space.WriteRune(c)
 		} else if inGroup(w.Breakpoints, c) {

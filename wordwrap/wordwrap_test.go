@@ -128,6 +128,14 @@ func TestWordWrap(t *testing.T) {
 			3,
 			true,
 		},
+		// NBSP keeps adjacent tokens glued; wrap should land at the regular
+		// space instead. (#49)
+		{
+			"foo bar baz",
+			"foo bar\nbaz",
+			3,
+			true,
+		},
 	}
 
 	for i, tc := range tt {
