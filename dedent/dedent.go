@@ -65,6 +65,10 @@ func dedent(s string, indent int) string {
 			shouldOmit = true
 			_ = buf.WriteByte(s[i])
 		default:
+			// First non-space rune on this line; stop trying to strip
+			// leading whitespace, otherwise a line like "➜ DKB" loses the
+			// space between the marker and the word.
+			shouldOmit = false
 			_ = buf.WriteByte(s[i])
 		}
 	}
