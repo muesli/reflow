@@ -153,3 +153,110 @@ func TestWordWrapString(t *testing.T) {
 		t.Errorf("expected:\n\n`%s`\n\nActual Output:\n\n`%s`", expected, actual)
 	}
 }
+
+func TestWordWrapCJK(t *testing.T) {
+	tt := []struct {
+		Input    string
+		Expected string
+		Limit    int
+	}{
+		// Pure CJK: each character is a valid break point (2 cols each).
+		// "中文"=4 cols, "测试"=4 cols → breaks at col 4.
+		{
+			"中文测试",
+			"中文\n测试",
+			4,
+		},
+		// "中文测"=6 cols, "试"=2 cols → breaks at col 6.
+		{
+			"中文测试",
+			"中文测\n试",
+			6,
+		},
+		// CJK fits in limit → no wrap.
+		{
+			"中文测试",
+			"中文测试",
+			8,
+		},
+		// CJK after Latin (space-separated): unchanged behavior.
+		// "foo " = 4 cols, "中文" = 4 cols → 8 cols total, fits.
+		{
+			"foo 中文测试",
+			"foo 中文\n测试",
+			8,
+		},
+		// CJK attached to Latin (no space): break at CJK↔Latin boundary.
+		// "这是"=4 cols, then "manual触" at newline → "manual触"=8 cols, fits 12.
+		{
+			"这是manual触发",
+			"这是\nmanual触\n发",
+			8,
+		},
+		// CJK punctuation: fullwidth punctuation is also a break point.
+		{
+			"你好，世界！",
+			"你好，\n世界！",
+			6,
+		},
+		// Mixed CJK+Latin with fullwidth punctuation.
+		{
+			"manual（手动触发），很可能没跑。",
+			"manual（手动\n触发），很可\n能没跑。",
+			12,
+		},
+		// Long CJK sentence wraps correctly.
+		{
+			"这是一个比较长的中文句子用来测试换行功能",
+			"这是一个比\n较长的中文\n句子用来测\n试换行功能",
+			10,
+		},
+		// Latin-only behavior unchanged.
+		{
+			"hello world",
+			"hello\nworld",
+			6,
+		},
+		// CJK↔Latin boundary: "测试"=4, then "abc"=3, then "测"=2 → "abc测"=5 > 4? No, limit=6.
+		// "测试"=4 cols, then "abc" starts a new word (CJK↔Latin boundary).
+		// "abc测" = 3+2=5 cols. "试" starts another word. 5+2=7 > 6 → break.
+		{
+			"测试abc测试",
+			"测试\nabc测\n试",
+			6,
+		},
+	}
+
+	for i, tc := range tt {
+		f := NewWriter(tc.Limit)
+		f.KeepNewlines = true
+
+		_, err := f.Write([]byte(tc.Input))
+		if err != nil {
+			t.Error(err)
+		}
+		f.Close()
+
+		if f.String() != tc.Expected {
+			t.Errorf("Test %d (limit=%d, input=%q):\nexpected:\n\n`%s`\n\nActual Output:\n\n`%s`",
+				i, tc.Limit, tc.Input, tc.Expected, f.String())
+		}
+	}
+}
+
+func TestWordWrapCJKNoWrap(t *testing.T) {
+	// Limit 0 disables wrapping — CJK text passes through unchanged.
+	got := String("中文测试abc测试", 0)
+	want := "中文测试abc测试"
+	if got != want {
+		t.Errorf("expected:\n\n`%s`\n\nActual Output:\n\n`%s`", want, got)
+	}
+}
+
+func TestWordWrapCJKString(t *testing.T) {
+	got := String("你好世界", 4)
+	want := "你好\n世界"
+	if got != want {
+		t.Errorf("expected:\n\n`%s`\n\nActual Output:\n\n`%s`", want, got)
+	}
+}

@@ -13,6 +13,17 @@ var (
 	defaultNewline     = []rune{'\n'}
 )
 
+// isCJK returns true for characters that follow CJK line-breaking rules:
+// each character is a valid line-break point. Covers CJK Unified Ideographs,
+// Hiragana, Katakana, Hangul, and CJK punctuation.
+func isCJK(r rune) bool {
+	return unicode.In(r, unicode.Han, unicode.Hiragana, unicode.Katakana,
+		unicode.Hangul, unicode.Lm, unicode.Nl) ||
+		(r >= 0x3000 && r <= 0x303F) || // CJK Symbols and Punctuation
+		(r >= 0xFF01 && r <= 0xFF60) || // Halfwidth and Fullwidth Forms (punct)
+		(r >= 0xFFE0 && r <= 0xFFE6) // Fullwidth signs
+}
+
 // WordWrap contains settings and state for customisable text reflowing with
 // support for ANSI escape sequences. This means you can style your terminal
 // output without affecting the word wrapping algorithm.
@@ -98,6 +109,12 @@ func (w *WordWrap) Write(b []byte) (int, error) {
 		s = strings.Replace(strings.TrimSpace(s), "\n", " ", -1)
 	}
 
+	// Track the previous rune to detect CJK↔non-CJK boundaries.
+	var prevCJK bool
+	// We need to know if we just flushed a word (to detect CJK boundary).
+	// We track prevCJK outside the loop so CJK boundary detection works
+	// across iterations.
+
 	for _, c := range s {
 		if c == '\x1B' {
 			// ANSI escape sequence
@@ -124,23 +141,41 @@ func (w *WordWrap) Write(b []byte) (int, error) {
 
 			w.addWord()
 			w.addNewLine()
+			prevCJK = false
 		} else if unicode.IsSpace(c) {
 			// end of current word
 			w.addWord()
 			_, _ = w.space.WriteRune(c)
+			prevCJK = false
 		} else if inGroup(w.Breakpoints, c) {
 			// valid breakpoint
 			w.addSpace()
 			w.addWord()
 			_, _ = w.buf.WriteRune(c)
+			prevCJK = false
 		} else {
-			// any other character
+			// CJK line-breaking: each CJK character is a valid break point.
+			// Break at CJK↔non-CJK boundaries and after each CJK char.
+			cjk := isCJK(c)
+			if cjk != prevCJK && w.word.PrintableRuneWidth() > 0 {
+				// CJK↔non-CJK boundary: flush current word before this char
+				w.addWord()
+			}
 			_, _ = w.word.WriteRune(c)
+			prevCJK = cjk
 
-			// add a line break if the current word would exceed the line's
-			// character limit
-			if w.lineLen+w.space.Len()+w.word.PrintableRuneWidth() > w.Limit &&
+			if cjk {
+				// CJK char: each char is a break point.
+				// Check if adding this char would exceed the limit.
+				// If so, newline first, then flush the single-char word.
+				if w.lineLen+w.space.Len()+w.word.PrintableRuneWidth() > w.Limit &&
+					w.word.PrintableRuneWidth() < w.Limit {
+					w.addNewLine()
+				}
+				w.addWord()
+			} else if w.lineLen+w.space.Len()+w.word.PrintableRuneWidth() > w.Limit &&
 				w.word.PrintableRuneWidth() < w.Limit {
+				// Non-CJK word: add a line break if it would exceed the limit
 				w.addNewLine()
 			}
 		}
