@@ -124,7 +124,7 @@ func (w *WordWrap) Write(b []byte) (int, error) {
 
 			w.addWord()
 			w.addNewLine()
-		} else if unicode.IsSpace(c) {
+		} else if unicode.IsSpace(c) && c != '\u00a0' {
 			// end of current word
 			w.addWord()
 			_, _ = w.space.WriteRune(c)
