@@ -114,6 +114,20 @@ func TestWordWrap(t *testing.T) {
 			6,
 			true,
 		},
+		// Non-breaking space (NBSP, U+00A0) should not be treated as a word break:
+		{
+			"foo\u00a0bar\u00a0baz",
+			"foo\u00a0bar\u00a0baz",
+			10,
+			true,
+		},
+		// NBSP should not cause wrapping even at low width:
+		{
+			"foo\u00a0bar",
+			"foo\u00a0bar",
+			3,
+			true,
+		},
 		// ANSI sequence codes don't affect length calculation:
 		{
 			"\x1B[38;2;249;38;114mfoo\x1B[0m\x1B[38;2;248;248;242m \x1B[0m\x1B[38;2;230;219;116mbar\x1B[0m",
