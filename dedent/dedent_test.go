@@ -41,6 +41,12 @@ func TestDedent(t *testing.T) {
 			Input:    "",
 			Expected: "",
 		},
+		// Multi-byte UTF-8 runes must not cause spaces within a line to be
+		// treated as indent and stripped.
+		{
+			Input:    "Your bank accounts:\n\n➜ DKB\n    ✓ Logged in as jamesbond\n  ING\n    ✓ Logged in as jamesbond\n",
+			Expected: "Your bank accounts:\n\n➜ DKB\n  ✓ Logged in as jamesbond\nING\n  ✓ Logged in as jamesbond\n",
+		},
 	}
 
 	for i, tc := range tt {
