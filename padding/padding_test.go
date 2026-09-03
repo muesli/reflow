@@ -224,3 +224,26 @@ type fakeWriter struct{}
 func (fakeWriter) Write(_ []byte) (int, error) {
 	return 0, fakeErr
 }
+
+func TestPaddingOverflow(t *testing.T) {
+	t.Parallel()
+
+	s := String("hello", ^uint(0))
+	if s != "hello" {
+		t.Errorf("expected no padding for overflowed uint, got: %q", s)
+	}
+
+	f := NewWriter(^uint(0), func(w io.Writer) {
+		_, _ = w.Write([]byte("."))
+	})
+	_, err := f.Write([]byte("foo\nbar"))
+	if err != nil {
+		t.Error(err)
+	}
+	if err := f.Close(); err != nil {
+		t.Error(err)
+	}
+	if f.String() != "foo\nbar" {
+		t.Errorf("expected no padding for overflowed uint, got: %q", f.String())
+	}
+}

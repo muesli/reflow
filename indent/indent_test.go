@@ -163,3 +163,23 @@ type fakeWriter struct{}
 func (fakeWriter) Write(_ []byte) (int, error) {
 	return 0, fakeErr
 }
+
+func TestIndentOverflow(t *testing.T) {
+	t.Parallel()
+
+	s := String("hello\nworld", ^uint(0))
+	if s != "hello\nworld" {
+		t.Errorf("expected no indentation for overflowed uint, got: %q", s)
+	}
+
+	f := NewWriter(^uint(0), func(w io.Writer) {
+		_, _ = w.Write([]byte("."))
+	})
+	_, err := f.Write([]byte("foo\nbar"))
+	if err != nil {
+		t.Error(err)
+	}
+	if f.String() != "foo\nbar" {
+		t.Errorf("expected no indentation for overflowed uint, got: %q", f.String())
+	}
+}
