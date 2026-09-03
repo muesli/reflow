@@ -123,3 +123,19 @@ type fakeWriter struct{}
 func (fakeWriter) Write(_ []byte) (int, error) {
 	return 0, fakeErr
 }
+
+func TestMarginOverflow(t *testing.T) {
+	t.Parallel()
+
+	s := String("hello\nworld", ^uint(0), 2)
+	expected := "  hello\n  world"
+	if s != expected {
+		t.Errorf("expected %q, got %q", expected, s)
+	}
+
+	s2 := String("hello\nworld", 10, ^uint(0))
+	expected2 := "hello     \nworld     "
+	if s2 != expected2 {
+		t.Errorf("expected %q, got %q", expected2, s2)
+	}
+}
