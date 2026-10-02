@@ -13,6 +13,9 @@ type Writer struct {
 	width uint
 	tail  string
 
+	curWidth      uint
+	lineTruncated bool
+
 	ansiWriter *ansi.Writer
 	buf        bytes.Buffer
 	ansi       bool
@@ -72,14 +75,33 @@ func StringWithTail(s string, width uint, tail string) string {
 // ansi sequences intact.
 func (w *Writer) Write(b []byte) (int, error) {
 	tw := ansi.PrintableRuneWidth(w.tail)
-	if w.width < uint(tw) {
-		return w.buf.WriteString(w.tail)
+	var limit uint
+	if w.width >= uint(tw) {
+		limit = w.width - uint(tw)
 	}
 
-	w.width -= uint(tw)
-	var curWidth uint
-
 	for _, c := range string(b) {
+		if c == '\n' {
+			w.lineTruncated = false
+			w.curWidth = 0
+			if w.ansiWriter != nil {
+				_, err := w.ansiWriter.Write([]byte("\n"))
+				if err != nil {
+					return 0, err
+				}
+			} else {
+				_, err := w.buf.WriteString("\n")
+				if err != nil {
+					return 0, err
+				}
+			}
+			continue
+		}
+
+		if w.lineTruncated {
+			continue
+		}
+
 		if c == ansi.Marker {
 			// ANSI escape sequence
 			w.ansi = true
@@ -89,20 +111,39 @@ func (w *Writer) Write(b []byte) (int, error) {
 				w.ansi = false
 			}
 		} else {
-			curWidth += uint(runewidth.RuneWidth(c))
-		}
-
-		if curWidth > w.width {
-			n, err := w.buf.WriteString(w.tail)
-			if w.ansiWriter.LastSequence() != "" {
-				w.ansiWriter.ResetAnsi()
+			rw := uint(runewidth.RuneWidth(c))
+			if w.curWidth+rw > limit {
+				w.lineTruncated = true
+				if len(w.tail) > 0 {
+					if w.ansiWriter != nil {
+						if _, err := w.ansiWriter.Write([]byte(w.tail)); err != nil {
+							return 0, err
+						}
+					} else {
+						if _, err := w.buf.WriteString(w.tail); err != nil {
+							return 0, err
+						}
+					}
+				}
+				if w.ansiWriter != nil && w.ansiWriter.LastSequence() != "" {
+					w.ansiWriter.ResetAnsi()
+				}
+				continue
 			}
-			return n, err
+
+			w.curWidth += rw
 		}
 
-		_, err := w.ansiWriter.Write([]byte(string(c)))
-		if err != nil {
-			return 0, err
+		if w.ansiWriter != nil {
+			_, err := w.ansiWriter.Write([]byte(string(c)))
+			if err != nil {
+				return 0, err
+			}
+		} else {
+			_, err := w.buf.WriteString(string(c))
+			if err != nil {
+				return 0, err
+			}
 		}
 	}
 

@@ -101,6 +101,48 @@ func TestTruncate(t *testing.T) {
 			"\x1B[38;5;219mHiya!",
 			"\x1B[38;5;219mHi…\x1B[0m",
 		},
+		// Multi-line block truncation:
+		{
+			5,
+			"",
+			"123456789\nhidden",
+			"12345\nhidde",
+		},
+		// Multi-line block truncation with tail:
+		{
+			5,
+			".",
+			"123456789\nhidden",
+			"1234.\nhidd.",
+		},
+		// Multi-line block where first line is shorter than width:
+		{
+			5,
+			"",
+			"123\nhidden",
+			"123\nhidde",
+		},
+		// Multi-line block where first line is shorter than width with tail:
+		{
+			5,
+			".",
+			"123\nhidden",
+			"123\nhidd.",
+		},
+		// Multi-line block with empty lines:
+		{
+			4,
+			"",
+			"foobar\n\nbarfoo",
+			"foob\n\nbarf",
+		},
+		// Multi-line block with ANSI styling:
+		{
+			4,
+			"",
+			"\x1B[31mfoobar\x1B[0m\n\x1B[32mbarfoo\x1B[0m",
+			"\x1B[31mfoob\x1B[0m\n\x1B[32mbarf\x1B[0m",
+		},
 	}
 
 	for i, tc := range tt {
@@ -184,4 +226,37 @@ type fakeWriter struct{}
 
 func (fakeWriter) Write(_ []byte) (int, error) {
 	return 0, fakeErr
+}
+
+func TestTruncate_MultipleWrites(t *testing.T) {
+	t.Parallel()
+
+	f := NewWriter(5, ".")
+	if _, err := f.Write([]byte("123456789\n")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.Write([]byte("hidden\n")); err != nil {
+		t.Fatal(err)
+	}
+
+	expected := "1234.\nhidd.\n"
+	if actual := f.String(); actual != expected {
+		t.Errorf("expected:\n\n`%s`\n\nActual Output:\n\n`%s`", expected, actual)
+	}
+}
+
+func TestNewWriterPipe_WithTail(t *testing.T) {
+	t.Parallel()
+
+	b := &bytes.Buffer{}
+	f := NewWriterPipe(b, 4, ".")
+
+	if _, err := f.Write([]byte("foobar\nhidden")); err != nil {
+		t.Fatal(err)
+	}
+
+	expected := "foo.\nhid."
+	if actual := b.String(); actual != expected {
+		t.Errorf("expected:\n\n`%s`\n\nActual Output:\n\n`%s`", expected, actual)
+	}
 }
