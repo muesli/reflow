@@ -9,6 +9,8 @@ import (
 	"github.com/muesli/reflow/ansi"
 )
 
+const maxInt = int(^uint(0) >> 1)
+
 type PaddingFunc func(w io.Writer)
 
 type Writer struct {
@@ -94,13 +96,14 @@ func (w *Writer) Write(b []byte) (int, error) {
 }
 
 func (w *Writer) pad() error {
-	if w.Padding > 0 && uint(w.lineLen) < w.Padding {
+	if w.Padding > 0 && w.Padding <= uint(maxInt) && w.lineLen >= 0 && w.lineLen < int(w.Padding) {
+		pad := int(w.Padding) - w.lineLen
 		if w.PadFunc != nil {
-			for i := 0; i < int(w.Padding)-w.lineLen; i++ {
+			for i := 0; i < pad; i++ {
 				w.PadFunc(w.ansiWriter)
 			}
 		} else {
-			_, err := w.ansiWriter.Write([]byte(strings.Repeat(" ", int(w.Padding)-w.lineLen)))
+			_, err := w.ansiWriter.Write([]byte(strings.Repeat(" ", pad)))
 			if err != nil {
 				return err
 			}

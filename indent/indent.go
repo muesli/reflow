@@ -8,6 +8,8 @@ import (
 	"github.com/muesli/reflow/ansi"
 )
 
+const maxInt = int(^uint(0) >> 1)
+
 type IndentFunc func(w io.Writer)
 
 type Writer struct {
@@ -70,14 +72,16 @@ func (w *Writer) Write(b []byte) (int, error) {
 		} else {
 			if !w.skipIndent {
 				w.ansiWriter.ResetAnsi()
-				if w.IndentFunc != nil {
-					for i := 0; i < int(w.Indent); i++ {
-						w.IndentFunc(w.ansiWriter)
-					}
-				} else {
-					_, err := w.ansiWriter.Write([]byte(strings.Repeat(" ", int(w.Indent))))
-					if err != nil {
-						return 0, err
+				if w.Indent > 0 && w.Indent <= uint(maxInt) {
+					if w.IndentFunc != nil {
+						for i := 0; i < int(w.Indent); i++ {
+							w.IndentFunc(w.ansiWriter)
+						}
+					} else {
+						_, err := w.ansiWriter.Write([]byte(strings.Repeat(" ", int(w.Indent))))
+						if err != nil {
+							return 0, err
+						}
 					}
 				}
 

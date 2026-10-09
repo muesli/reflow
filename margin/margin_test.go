@@ -123,3 +123,42 @@ type fakeWriter struct{}
 func (fakeWriter) Write(_ []byte) (int, error) {
 	return 0, fakeErr
 }
+
+func TestMarginLargeWidth(t *testing.T) {
+	t.Parallel()
+
+	largeWidths := []uint{
+		^uint(0),
+		^uint(0) - 1,
+	}
+
+	for _, w := range largeWidths {
+		// Large width, small margin:
+		res := String("hello\nworld", w, 2)
+		expected := "  hello\n  world"
+		if res != expected {
+			t.Errorf("expected %q, got %q for width %d, margin 2", expected, res, w)
+		}
+
+		// Small width, large margin:
+		res = String("hello\nworld", 10, w)
+		expected = "hello     \nworld     "
+		if res != expected {
+			t.Errorf("expected %q, got %q for width 10, margin %d", expected, res, w)
+		}
+
+		// Both large:
+		res = String("hello\nworld", w, w)
+		expected = "hello\nworld"
+		if res != expected {
+			t.Errorf("expected %q, got %q for width %d, margin %d", expected, res, w, w)
+		}
+
+		// Bytes variant:
+		bRes := Bytes([]byte("hello\nworld"), w, 2)
+		expected = "  hello\n  world"
+		if string(bRes) != expected {
+			t.Errorf("expected %q, got %q for Bytes with width %d, margin 2", expected, string(bRes), w)
+		}
+	}
+}

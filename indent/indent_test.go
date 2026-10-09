@@ -163,3 +163,50 @@ type fakeWriter struct{}
 func (fakeWriter) Write(_ []byte) (int, error) {
 	return 0, fakeErr
 }
+
+func TestIndentLargeWidth(t *testing.T) {
+	t.Parallel()
+
+	largeWidths := []uint{
+		^uint(0),
+		^uint(0) - 1,
+		uint(maxInt) + 1,
+	}
+
+	for _, w := range largeWidths {
+		res := String("hello\nworld", w)
+		expected := "hello\nworld"
+		if res != expected {
+			t.Errorf("expected %q, got %q for width %d", expected, res, w)
+		}
+
+		bRes := Bytes([]byte("hello\nworld"), w)
+		if string(bRes) != expected {
+			t.Errorf("expected %q, got %q for width %d", expected, string(bRes), w)
+		}
+
+		var buf bytes.Buffer
+		pipe := NewWriterPipe(&buf, w, nil)
+		if _, err := pipe.Write([]byte("hello\nworld")); err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+		if buf.String() != expected {
+			t.Errorf("expected %q, got %q for width %d", expected, buf.String(), w)
+		}
+
+		var called bool
+		writerWithFunc := NewWriter(w, func(wr io.Writer) {
+			called = true
+			_, _ = wr.Write([]byte(">"))
+		})
+		if _, err := writerWithFunc.Write([]byte("hello\nworld")); err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+		if called {
+			t.Errorf("indent func should not be called for overflowed width %d", w)
+		}
+		if writerWithFunc.String() != expected {
+			t.Errorf("expected %q, got %q for width %d", expected, writerWithFunc.String(), w)
+		}
+	}
+}

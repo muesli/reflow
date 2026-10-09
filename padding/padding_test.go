@@ -224,3 +224,56 @@ type fakeWriter struct{}
 func (fakeWriter) Write(_ []byte) (int, error) {
 	return 0, fakeErr
 }
+
+func TestPaddingLargeWidth(t *testing.T) {
+	t.Parallel()
+
+	largeWidths := []uint{
+		^uint(0),
+		^uint(0) - 1,
+		uint(maxInt) + 1,
+	}
+
+	for _, w := range largeWidths {
+		res := String("hello", w)
+		expected := "hello"
+		if res != expected {
+			t.Errorf("expected %q, got %q for width %d", expected, res, w)
+		}
+
+		bRes := Bytes([]byte("hello"), w)
+		if string(bRes) != expected {
+			t.Errorf("expected %q, got %q for width %d", expected, string(bRes), w)
+		}
+
+		var buf bytes.Buffer
+		pipe := NewWriterPipe(&buf, w, nil)
+		if _, err := pipe.Write([]byte("hello\nworld\n")); err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+		if err := pipe.Close(); err != nil {
+			t.Errorf("unexpected error on close: %v", err)
+		}
+		if buf.String() != "hello\nworld\n" {
+			t.Errorf("expected %q, got %q for width %d", "hello\nworld\n", buf.String(), w)
+		}
+
+		var called bool
+		writerWithFunc := NewWriter(w, func(wr io.Writer) {
+			called = true
+			_, _ = wr.Write([]byte(">"))
+		})
+		if _, err := writerWithFunc.Write([]byte("hello")); err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+		if err := writerWithFunc.Close(); err != nil {
+			t.Errorf("unexpected error on close: %v", err)
+		}
+		if called {
+			t.Errorf("pad func should not be called for overflowed width %d", w)
+		}
+		if writerWithFunc.String() != expected {
+			t.Errorf("expected %q, got %q for width %d", expected, writerWithFunc.String(), w)
+		}
+	}
+}
