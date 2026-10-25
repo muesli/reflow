@@ -58,9 +58,21 @@ func String(s string, limit int) string {
 }
 
 func (w *WordWrap) addSpace() {
-	w.lineLen += w.space.Len()
+	w.lineLen += w.spaceWidth()
 	_, _ = w.buf.Write(w.space.Bytes())
 	w.space.Reset()
+}
+
+func (w *WordWrap) spaceWidth() int {
+	var width int
+	for _, c := range w.space.String() {
+		if unicode.IsControl(c) {
+			width += len(string(c))
+		} else {
+			width += ansi.PrintableRuneWidth(string(c))
+		}
+	}
+	return width
 }
 
 func (w *WordWrap) addWord() {
@@ -87,6 +99,41 @@ func inGroup(a []rune, c rune) bool {
 	return false
 }
 
+func (w *WordWrap) consumeANSI(c rune) bool {
+	if c == '\x1B' {
+		// ANSI escape sequence
+		_, _ = w.word.WriteRune(c)
+		w.ansi = true
+		return true
+	}
+	if !w.ansi {
+		return false
+	}
+	_, _ = w.word.WriteRune(c)
+	if (c >= 0x40 && c <= 0x5a) || (c >= 0x61 && c <= 0x7a) {
+		// ANSI sequence terminated
+		w.ansi = false
+	}
+	return true
+}
+
+func (w *WordWrap) flushLine() {
+	// end of current line
+	// see if we can add the content of the space buffer to the current line
+	if w.word.Len() == 0 {
+		if w.lineLen+w.spaceWidth() > w.Limit {
+			w.lineLen = 0
+		} else {
+			// preserve whitespace
+			_, _ = w.buf.Write(w.space.Bytes())
+		}
+		w.space.Reset()
+	}
+
+	w.addWord()
+	w.addNewLine()
+}
+
 // Write is used to write more content to the word-wrap buffer.
 func (w *WordWrap) Write(b []byte) (int, error) {
 	if w.Limit == 0 {
@@ -99,31 +146,10 @@ func (w *WordWrap) Write(b []byte) (int, error) {
 	}
 
 	for _, c := range s {
-		if c == '\x1B' {
-			// ANSI escape sequence
-			_, _ = w.word.WriteRune(c)
-			w.ansi = true
-		} else if w.ansi {
-			_, _ = w.word.WriteRune(c)
-			if (c >= 0x40 && c <= 0x5a) || (c >= 0x61 && c <= 0x7a) {
-				// ANSI sequence terminated
-				w.ansi = false
-			}
+		if w.consumeANSI(c) {
+			continue
 		} else if inGroup(w.Newline, c) {
-			// end of current line
-			// see if we can add the content of the space buffer to the current line
-			if w.word.Len() == 0 {
-				if w.lineLen+w.space.Len() > w.Limit {
-					w.lineLen = 0
-				} else {
-					// preserve whitespace
-					_, _ = w.buf.Write(w.space.Bytes())
-				}
-				w.space.Reset()
-			}
-
-			w.addWord()
-			w.addNewLine()
+			w.flushLine()
 		} else if unicode.IsSpace(c) {
 			// end of current word
 			w.addWord()
@@ -139,7 +165,7 @@ func (w *WordWrap) Write(b []byte) (int, error) {
 
 			// add a line break if the current word would exceed the line's
 			// character limit
-			if w.lineLen+w.space.Len()+w.word.PrintableRuneWidth() > w.Limit &&
+			if w.lineLen+w.spaceWidth()+w.word.PrintableRuneWidth() > w.Limit &&
 				w.word.PrintableRuneWidth() < w.Limit {
 				w.addNewLine()
 			}
