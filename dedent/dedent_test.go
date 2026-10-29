@@ -41,6 +41,14 @@ func TestDedent(t *testing.T) {
 			Input:    "",
 			Expected: "",
 		},
+		{
+			Input:    "  line 1\nline 2\n",
+			Expected: "  line 1\nline 2\n",
+		},
+		{
+			Input:    "line 1\n  line 2\n",
+			Expected: "line 1\n  line 2\n",
+		},
 	}
 
 	for i, tc := range tt {

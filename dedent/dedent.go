@@ -18,7 +18,7 @@ func String(s string) string {
 func minIndent(s string) int {
 	var (
 		curIndent    int
-		minIndent    int
+		minIndent    = -1
 		shouldAppend = true
 	)
 	for i := 0; i < len(s); i++ {
@@ -31,14 +31,19 @@ func minIndent(s string) int {
 			curIndent = 0
 			shouldAppend = true
 		default:
-			if curIndent > 0 && (minIndent == 0 || curIndent < minIndent) {
-				minIndent = curIndent
+			if shouldAppend {
+				if minIndent == -1 || curIndent < minIndent {
+					minIndent = curIndent
+				}
 				curIndent = 0
+				shouldAppend = false
 			}
-			shouldAppend = false
 		}
 	}
 
+	if minIndent == -1 {
+		return 0
+	}
 	return minIndent
 }
 
