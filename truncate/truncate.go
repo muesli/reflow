@@ -73,10 +73,10 @@ func StringWithTail(s string, width uint, tail string) string {
 func (w *Writer) Write(b []byte) (int, error) {
 	tw := ansi.PrintableRuneWidth(w.tail)
 	if w.width < uint(tw) {
-		return w.buf.WriteString(w.tail)
+		return io.WriteString(w.ansiWriter.Forward, w.tail)
 	}
 
-	w.width -= uint(tw)
+	max := w.width - uint(tw)
 	var curWidth uint
 
 	for _, c := range string(b) {
@@ -92,8 +92,8 @@ func (w *Writer) Write(b []byte) (int, error) {
 			curWidth += uint(runewidth.RuneWidth(c))
 		}
 
-		if curWidth > w.width {
-			n, err := w.buf.WriteString(w.tail)
+		if curWidth > max {
+			n, err := io.WriteString(w.ansiWriter.Forward, w.tail)
 			if w.ansiWriter.LastSequence() != "" {
 				w.ansiWriter.ResetAnsi()
 			}

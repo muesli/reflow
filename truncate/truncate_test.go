@@ -165,6 +165,27 @@ func TestNewWriterPipe(t *testing.T) {
 	}
 }
 
+func TestNewWriterPipeWithTail(t *testing.T) {
+	t.Parallel()
+
+	b := &bytes.Buffer{}
+	f := NewWriterPipe(b, 4, ".")
+
+	if _, err := f.Write([]byte("foobar")); err != nil {
+		t.Error(err)
+	}
+
+	actual := b.String()
+	expected := "foo."
+
+	if actual != expected {
+		t.Errorf("expected:\n\n`%s`\n\nActual Output:\n\n`%s`", expected, actual)
+	}
+	if f.width != 4 {
+		t.Errorf("expected width to remain 4, got %d", f.width)
+	}
+}
+
 func TestWriter_Error(t *testing.T) {
 	t.Parallel()
 
