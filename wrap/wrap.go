@@ -75,6 +75,10 @@ func (w *Wrap) Write(b []byte) (int, error) {
 
 	if w.Limit <= 0 || w.lineLen+width <= w.Limit {
 		w.lineLen += width
+		if w.Limit > 0 {
+			_, _ = w.buf.WriteString(s)
+			return len(b), nil
+		}
 		return w.buf.Write(b)
 	}
 
