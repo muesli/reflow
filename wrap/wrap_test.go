@@ -32,6 +32,40 @@ func TestWrap(t *testing.T) {
 			PreserveSpace: false,
 			TabWidth:      0,
 		},
+		// Short inputs still respect the configured newline and tab handling.
+		{
+			Input:         "a\nb",
+			Expected:      "ab",
+			Limit:         10,
+			KeepNewlines:  false,
+			PreserveSpace: false,
+			TabWidth:      0,
+		},
+		{
+			Input:         "a\tb",
+			Expected:      "a   b",
+			Limit:         10,
+			KeepNewlines:  true,
+			PreserveSpace: false,
+			TabWidth:      3,
+		},
+		// Nonpositive limits leave the input unchanged, including newlines and tabs.
+		{
+			Input:         "a\nb",
+			Expected:      "a\nb",
+			Limit:         0,
+			KeepNewlines:  false,
+			PreserveSpace: false,
+			TabWidth:      0,
+		},
+		{
+			Input:         "a\tb",
+			Expected:      "a\tb",
+			Limit:         -1,
+			KeepNewlines:  true,
+			PreserveSpace: false,
+			TabWidth:      3,
+		},
 		// In contrast to wordwrap we break a long word to obey the given limit
 		{
 			Input:         "foobarfoo",
@@ -121,9 +155,12 @@ func TestWrap(t *testing.T) {
 		f.PreserveSpace = tc.PreserveSpace
 		f.TabWidth = tc.TabWidth
 
-		_, err := f.Write([]byte(tc.Input))
+		n, err := f.Write([]byte(tc.Input))
 		if err != nil {
 			t.Error(err)
+		}
+		if n != len(tc.Input) {
+			t.Errorf("Test %d, expected Write count %d, got %d", i, len(tc.Input), n)
 		}
 
 		if f.String() != tc.Expected {
